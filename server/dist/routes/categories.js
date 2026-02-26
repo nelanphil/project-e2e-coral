@@ -1,0 +1,55 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.categoriesRouter = void 0;
+const express_1 = require("express");
+const auth_js_1 = require("../middleware/auth.js");
+const Category_js_1 = require("../models/Category.js");
+exports.categoriesRouter = (0, express_1.Router)();
+exports.categoriesRouter.get("/", async (_req, res) => {
+    try {
+        const categories = await Category_js_1.Category.find().sort({ name: 1 }).lean();
+        res.json({ categories });
+    }
+    catch {
+        res.status(500).json({ error: "Failed to list categories" });
+    }
+});
+exports.categoriesRouter.get("/:slug", async (req, res) => {
+    try {
+        const category = await Category_js_1.Category.findOne({ slug: req.params.slug }).lean();
+        if (!category) {
+            res.status(404).json({ error: "Not found" });
+            return;
+        }
+        res.json(category);
+    }
+    catch {
+        res.status(500).json({ error: "Failed to get category" });
+    }
+});
+exports.categoriesRouter.post("/", auth_js_1.requireAdmin, async (req, res) => {
+    const { name, slug } = req.body;
+    if (!name || !slug) {
+        res.status(400).json({ error: "name and slug required" });
+        return;
+    }
+    const category = await Category_js_1.Category.create({ name, slug });
+    res.status(201).json(category);
+});
+exports.categoriesRouter.put("/:id", auth_js_1.requireAdmin, async (req, res) => {
+    const { name, slug } = req.body;
+    const category = await Category_js_1.Category.findByIdAndUpdate(req.params.id, { ...(name != null && { name }), ...(slug != null && { slug }) }, { new: true }).lean();
+    if (!category) {
+        res.status(404).json({ error: "Not found" });
+        return;
+    }
+    res.json(category);
+});
+exports.categoriesRouter.delete("/:id", auth_js_1.requireAdmin, async (req, res) => {
+    const result = await Category_js_1.Category.findByIdAndDelete(req.params.id);
+    if (!result) {
+        res.status(404).json({ error: "Not found" });
+        return;
+    }
+    res.json({ ok: true });
+});
