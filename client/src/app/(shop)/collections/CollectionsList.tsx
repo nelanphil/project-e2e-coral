@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import type { Collection, Product } from "@/lib/types";
 
 type SortOrder = "asc" | "desc";
@@ -74,36 +75,40 @@ export function CollectionsList({ collections: initialCollections }: Collections
                 <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {displayProducts.map((p: Product) => (
                     <li key={p._id}>
-                      <Link
-                        href={`/coral/${p.slug}?from=collections`}
-                        className="card card-compact bg-base-100 shadow hover:shadow-md transition"
-                      >
-                        <figure className="bg-base-200 h-48 relative shrink-0 overflow-hidden">
-                          {p.images?.[0] ? (
-                            <Image
-                              src={p.images[0]}
-                              alt={p.name}
-                              fill
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                              className="object-cover"
-                            />
-                          ) : null}
-                        </figure>
-                        <div className="card-body">
-                          <h3 className="card-title text-lg">{p.name}</h3>
+                      <div className="card card-compact bg-base-100 shadow hover:shadow-md transition flex flex-col h-full">
+                        <Link
+                          href={`/coral/${p.slug}?from=collections`}
+                          className="flex flex-col flex-1"
+                        >
+                          <figure className="bg-base-200 h-48 relative shrink-0 overflow-hidden">
+                            {p.images?.[0] ? (
+                              <Image
+                                src={p.images[0]}
+                                alt={p.name}
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                className="object-cover"
+                              />
+                            ) : null}
+                          </figure>
+                          <div className="card-body">
+                            <h3 className="card-title text-lg">{p.name}</h3>
+                          </div>
+                        </Link>
+                        <div className="px-4 pb-4 flex items-center justify-between gap-2">
                           <p className="font-semibold flex items-center gap-2">
                             <span>${(p.price / 100).toFixed(2)}</span>
                             {"compareAtPrice" in p &&
                               p.compareAtPrice != null &&
                               p.compareAtPrice > p.price && (
                                 <span className="text-sm text-base-content/50 line-through font-normal">
-                                  $
-                                  {(p.compareAtPrice! / 100).toFixed(2)}
+                                  ${(p.compareAtPrice! / 100).toFixed(2)}
                                 </span>
                               )}
                           </p>
+                          <AddToCartButton productId={p._id} availableQuantity={p.inventory?.quantity} className="btn-sm mt-0 shrink-0" />
                         </div>
-                      </Link>
+                      </div>
                     </li>
                   ))}
                 </ul>

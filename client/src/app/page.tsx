@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { CollectionsCarousel } from "@/components/home/CollectionsCarousel";
@@ -8,6 +9,24 @@ import type {
   CollectionsResponse,
   ProductsResponse,
 } from "@/lib/types";
+
+export const metadata: Metadata = {
+  title: "Coral Store — Premium Corals for Your Reef",
+  description:
+    "Shop premium corals for your reef aquarium. Carefully curated selection of high-quality specimens for beginners and experienced collectors.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Coral Store — Premium Corals for Your Reef",
+    description:
+      "Shop premium corals for your reef aquarium. Carefully curated selection of high-quality specimens for beginners and experienced collectors.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Coral Store — Premium Corals for Your Reef",
+    description:
+      "Shop premium corals for your reef aquarium. Carefully curated selection of high-quality specimens for beginners and experienced collectors.",
+  },
+};
 
 export default async function Home() {
   let categories: CategoriesResponse["categories"] = [];
@@ -158,14 +177,23 @@ export default async function Home() {
       </section>
 
       {/* Categories Section */}
-      {categories.length > 0 && (
+      {categories
+        .filter(
+          (c) => !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name)
+        )
+        .length > 0 && (
         <section className="py-16 px-4 bg-base-200">
           <div className="container mx-auto max-w-4xl">
             <h2 className="text-3xl font-bold text-center mb-8">
               Browse by Category
             </h2>
             <div className="flex flex-wrap gap-3 justify-center">
-              {categories.map((category) => (
+              {categories
+                .filter(
+                  (c) =>
+                    !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name)
+                )
+                .map((category) => (
                 <Link
                   key={category._id}
                   href={`/category/${category.slug}`}

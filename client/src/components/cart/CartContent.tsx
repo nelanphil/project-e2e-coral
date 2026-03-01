@@ -1,14 +1,115 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import type { CartItem } from "@/lib/types";
 
 type CartContentProps = { onClose?: () => void };
 
+function CartItemRow({
+  item,
+  onDecrease,
+  onIncrease,
+  onRemoveAll,
+  onClose,
+}: {
+  item: CartItem;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  onRemoveAll: () => void;
+  onClose?: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleDecrease() {
+    setLoading(true);
+    try {
+      await onDecrease();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleIncrease() {
+    setLoading(true);
+    try {
+      await onIncrease();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <li>
+      <div className="flex flex-col gap-2 rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
+        <div className="relative aspect-square w-full max-w-[140px] mx-auto overflow-hidden rounded-lg bg-base-200">
+          {item.image ? (
+            <Image
+              src={item.image}
+              alt={item.name}
+              fill
+              sizes="140px"
+              className="object-cover"
+            />
+          ) : null}
+        </div>
+        <Link
+          href={`/coral/${item.slug}`}
+          className="link link-hover font-medium text-center line-clamp-2"
+          onClick={onClose}
+        >
+          {item.name}
+        </Link>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-base-content/70">
+            ${(item.price / 100).toFixed(2)} × {item.quantity}
+          </span>
+          <span className="font-medium">
+            ${((item.price * item.quantity) / 100).toFixed(2)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="join border border-base-300 rounded-lg">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm join-item px-2"
+              onClick={handleDecrease}
+              disabled={loading}
+              aria-label="Decrease quantity"
+            >
+              <Minus className="size-4" />
+            </button>
+            <span className="join-item px-3 py-1 text-sm font-medium min-w-[2ch] text-center">
+              {item.quantity}
+            </span>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm join-item px-2"
+              onClick={handleIncrease}
+              disabled={loading}
+              aria-label="Increase quantity"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm btn-block text-error hover:text-error"
+          onClick={() => onRemoveAll()}
+        >
+          Remove all
+        </button>
+      </div>
+    </li>
+  );
+}
+
 export function CartContent({ onClose }: CartContentProps = {}) {
-  const { items, loading, removeItem } = useCartStore();
+  const { items, loading, removeItem, updateQuantity } = useCartStore();
 
   if (loading) {
     return (
@@ -36,43 +137,14 @@ export function CartContent({ onClose }: CartContentProps = {}) {
     <div className="flex flex-col">
       <ul className="space-y-3 overflow-y-auto">
         {items.map((item: CartItem) => (
-          <li key={item.productId}>
-            <div className="flex flex-col gap-2 rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
-              <div className="relative aspect-square w-full max-w-[140px] mx-auto overflow-hidden rounded-lg bg-base-200">
-                {item.image ? (
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    fill
-                    sizes="140px"
-                    className="object-cover"
-                  />
-                ) : null}
-              </div>
-              <Link
-                href={`/coral/${item.slug}`}
-                className="link link-hover font-medium text-center line-clamp-2"
-                onClick={onClose}
-              >
-                {item.name}
-              </Link>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-base-content/70">
-                  ${(item.price / 100).toFixed(2)} × {item.quantity}
-                </span>
-                <span className="font-medium">
-                  ${((item.price * item.quantity) / 100).toFixed(2)}
-                </span>
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm btn-block text-error hover:text-error"
-                onClick={() => removeItem(item.productId)}
-              >
-                Remove
-              </button>
-            </div>
-          </li>
+          <CartItemRow
+            key={item.productId}
+            item={item}
+            onDecrease={() => updateQuantity(item.productId, item.quantity - 1)}
+            onIncrease={() => updateQuantity(item.productId, item.quantity + 1)}
+            onRemoveAll={() => removeItem(item.productId)}
+            onClose={onClose}
+          />
         ))}
       </ul>
 

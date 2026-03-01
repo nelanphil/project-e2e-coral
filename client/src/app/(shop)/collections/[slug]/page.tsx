@@ -12,9 +12,22 @@ export async function generateMetadata({ params }: Props) {
     const collection = await fetchApi<Collection>(
       `/api/collections/${encodeURIComponent(slug)}`
     );
+    const description = collection.description || `Browse the ${collection.name} collection`;
+    const firstImage = (collection.products as Product[] | undefined)?.[0]?.images?.[0];
     return {
       title: collection.name,
-      description: collection.description || undefined,
+      description,
+      alternates: { canonical: `/collections/${slug}` },
+      openGraph: {
+        title: collection.name,
+        description,
+        images: firstImage ? [{ url: firstImage }] : undefined,
+      },
+      twitter: {
+        card: firstImage ? ("summary_large_image" as const) : ("summary" as const),
+        title: collection.name,
+        description,
+      },
     };
   } catch {
     return { title: "Collection" };
@@ -41,7 +54,7 @@ export default async function CollectionDetailPage({ params }: Props) {
   return (
     <main className="container mx-auto px-4 py-8">
       <nav className="text-sm text-base-content/70 mb-4">
-        <Link href="/">Home</Link> /{" "}
+        <Link href="/store">Store</Link> /{" "}
         <Link href="/collections">Collections</Link> /{" "}
         <span>{collection.name}</span>
       </nav>
@@ -88,7 +101,7 @@ export default async function CollectionDetailPage({ params }: Props) {
                         </span>
                       )}
                   </p>
-                  <AddToCartButton productId={p._id} className="btn-sm mt-0 shrink-0" />
+                  <AddToCartButton productId={p._id} availableQuantity={p.inventory?.quantity} className="btn-sm mt-0 shrink-0" />
                 </div>
               </div>
             </li>

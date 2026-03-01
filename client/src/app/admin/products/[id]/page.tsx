@@ -7,8 +7,7 @@ import { getAuthToken } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { slugify } from "@/lib/slugify";
 import { useProductStore } from "@/stores/product-store";
-import { revalidateCollections, revalidateProducts } from "@/app/actions/revalidate";
-import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { revalidateProducts } from "@/app/actions/revalidate";
 import type { Product } from "@/lib/types";
 import type { Category } from "@/lib/types";
 import type { Collection } from "@/lib/types";
@@ -55,13 +54,6 @@ export default function EditProductPage() {
     images: [] as string[],
     collectionIds: [] as string[],
     attributes: {} as Record<string, string>,
-    whyChoose: "",
-    keyFeatures: "",
-    colorVariation: "",
-    growthHabit: "",
-    optimalCare: "",
-    idealCompatibility: "",
-    isActive: true,
     inventoryReason: "manual" as "manual" | "restock" | "adjustment",
     inventoryNotes: "",
     priceReason: "correction" as
@@ -153,17 +145,6 @@ export default function EditProductPage() {
               p.attributes && typeof p.attributes === "object"
                 ? p.attributes
                 : {},
-            whyChoose: p.whyChoose ?? "",
-            keyFeatures: p.keyFeatures ?? "",
-            colorVariation: p.colorVariation ?? "",
-            growthHabit: p.growthHabit ?? "",
-            optimalCare: p.optimalCare ?? "",
-            idealCompatibility: p.idealCompatibility ?? "",
-            isActive: p.isActive !== false,
-            inventoryReason: "manual",
-            inventoryNotes: "",
-            priceReason: "correction",
-            priceNotes: "",
           });
         }
       })
@@ -175,25 +156,8 @@ export default function EditProductPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-
-    if (!form.name.trim()) {
-      setActiveTab("details");
-      setError("Product name is required.");
-      return;
-    }
-    if (!form.category) {
-      setActiveTab("details");
-      setError("Please select a category.");
-      return;
-    }
-    if (!form.price || isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0) {
-      setActiveTab("pricing");
-      setError("A valid price is required.");
-      return;
-    }
-
     setLoading(true);
+    setError(null);
     try {
       const res = await api(`/api/products/${id}`, {
         method: "PUT",
@@ -218,13 +182,6 @@ export default function EditProductPage() {
           images: form.images,
           collections: form.collectionIds,
           attributes: form.attributes,
-          whyChoose: form.whyChoose || null,
-          keyFeatures: form.keyFeatures || null,
-          colorVariation: form.colorVariation || null,
-          growthHabit: form.growthHabit || null,
-          optimalCare: form.optimalCare || null,
-          idealCompatibility: form.idealCompatibility || null,
-          isActive: form.isActive,
         }),
       });
       if (!res.ok) {
@@ -234,7 +191,6 @@ export default function EditProductPage() {
       await Promise.all([
         useProductStore.getState().invalidate(),
         revalidateProducts(),
-        revalidateCollections(),
       ]);
       router.push(backHref);
     } catch (err: any) {
@@ -388,7 +344,7 @@ export default function EditProductPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card bg-base-100 shadow">
           <div className="card-body">
             <div className="tabs tabs-boxed mb-4">
@@ -444,200 +400,87 @@ export default function EditProductPage() {
             </div>
 
             <div className="max-w-2xl">
-              <div className={activeTab !== "details" ? "hidden" : "space-y-6"}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">
-                      <span className="label-text">Name</span>
-                      <span className="label-text-alt text-error">*</span>
-                    </label>
-                    <input
-                      className="input input-bordered w-full"
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, name: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="label">
-                      <span className="label-text">Slug</span>
-                    </label>
-                    <input
-                      className="input input-bordered w-full bg-base-200"
-                      value={form.slug}
-                      readOnly
-                    />
-                    <label className="label">
-                      <span className="label-text-alt">
-                        Auto-generated from name
-                      </span>
-                    </label>
-                  </div>
+              <div className={activeTab !== "details" ? "hidden" : "space-y-4"}>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Name</span>
+                    <span className="label-text-alt text-error">*</span>
+                  </label>
+                  <input
+                    className="input input-bordered w-full"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, name: e.target.value }))
+                    }
+                    required
+                  />
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">
-                      <span className="label-text">SKU</span>
-                    </label>
-                    <input
-                      className="input input-bordered w-full"
-                      value={form.sku}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, sku: e.target.value }))
-                      }
-                      placeholder="Optional"
-                    />
-                    <label className="label">
-                      <span className="label-text-alt">
-                        Stock Keeping Unit identifier
-                      </span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="label">
-                      <span className="label-text">Category</span>
-                      <span className="label-text-alt text-error">*</span>
-                    </label>
-                    <select
-                      className="select select-bordered w-full"
-                      value={form.category}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, category: e.target.value }))
-                      }
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map((c) => (
-                        <option key={c._id} value={c._id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Slug</span>
+                  </label>
+                  <input
+                    className="input input-bordered w-full read-only bg-base-200"
+                    value={form.slug}
+                    readOnly
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">
+                      Auto-generated from name
+                    </span>
+                  </label>
                 </div>
-
+                <div>
+                  <label className="label">
+                    <span className="label-text">SKU</span>
+                  </label>
+                  <input
+                    className="input input-bordered w-full"
+                    value={form.sku}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, sku: e.target.value }))
+                    }
+                    placeholder="Product SKU (optional)"
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">
+                      Stock Keeping Unit identifier
+                    </span>
+                  </label>
+                </div>
                 <div>
                   <label className="label">
                     <span className="label-text">Description</span>
                   </label>
-                  <RichTextEditor
+                  <textarea
+                    className="textarea textarea-bordered w-full"
                     value={form.description}
-                    onChange={(html) =>
-                      setForm((f) => ({ ...f, description: html }))
-                    }
-                    minHeight="10rem"
-                  />
-                </div>
-
-                <div>
-                  <label className="label">
-                    <span className="label-text">Why Choose</span>
-                  </label>
-                  <RichTextEditor
-                    value={form.whyChoose}
-                    onChange={(html) =>
-                      setForm((f) => ({ ...f, whyChoose: html }))
-                    }
-                    placeholder="Optional"
-                    minHeight="6rem"
-                  />
-                </div>
-                <div>
-                  <label className="label">
-                    <span className="label-text">Key Features</span>
-                  </label>
-                  <RichTextEditor
-                    value={form.keyFeatures}
-                    onChange={(html) =>
-                      setForm((f) => ({ ...f, keyFeatures: html }))
-                    }
-                    placeholder="Optional"
-                    minHeight="6rem"
-                  />
-                </div>
-                <div>
-                  <label className="label">
-                    <span className="label-text">Color Variation</span>
-                  </label>
-                  <RichTextEditor
-                    value={form.colorVariation}
-                    onChange={(html) =>
-                      setForm((f) => ({ ...f, colorVariation: html }))
-                    }
-                    placeholder="Optional"
-                    minHeight="6rem"
-                  />
-                </div>
-                <div>
-                  <label className="label">
-                    <span className="label-text">Growth Habit</span>
-                  </label>
-                  <RichTextEditor
-                    value={form.growthHabit}
-                    onChange={(html) =>
-                      setForm((f) => ({ ...f, growthHabit: html }))
-                    }
-                    placeholder="Optional"
-                    minHeight="6rem"
-                  />
-                </div>
-                <div>
-                  <label className="label">
-                    <span className="label-text">Optimal Care</span>
-                  </label>
-                  <RichTextEditor
-                    value={form.optimalCare}
-                    onChange={(html) =>
-                      setForm((f) => ({ ...f, optimalCare: html }))
-                    }
-                    placeholder="Optional"
-                    minHeight="6rem"
-                  />
-                </div>
-                <div>
-                  <label className="label">
-                    <span className="label-text">
-                      Ideal Compatibility with Other Corals
-                    </span>
-                  </label>
-                  <RichTextEditor
-                    value={form.idealCompatibility}
-                    onChange={(html) =>
-                      setForm((f) => ({
-                        ...f,
-                        idealCompatibility: html,
-                      }))
-                    }
-                    placeholder="Optional"
-                    minHeight="6rem"
-                  />
-                </div>
-
-                <div className="divider my-1" />
-
-                <div className="flex items-center justify-between rounded-lg bg-base-200 px-4 py-3">
-                  <div>
-                    <p className="font-medium text-sm">Store Visibility</p>
-                    <p className="text-xs text-base-content/60 mt-0.5">
-                      {form.isActive
-                        ? "This product is visible on the storefront and in collections."
-                        : "This product is hidden from the storefront and collections."}
-                    </p>
-                    {form.isActive && (!form.price || parseFloat(form.price) <= 0) && (
-                      <p className="text-xs text-warning mt-1">
-                        Products with no price will be automatically hidden when saved.
-                      </p>
-                    )}
-                  </div>
-                  <input
-                    type="checkbox"
-                    className={`toggle toggle-md ${form.isActive ? "toggle-success" : ""}`}
-                    checked={form.isActive}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, isActive: e.target.checked }))
+                      setForm((f) => ({ ...f, description: e.target.value }))
                     }
+                    rows={6}
                   />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Category</span>
+                    <span className="label-text-alt text-error">*</span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, category: e.target.value }))
+                    }
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -821,6 +664,7 @@ export default function EditProductPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, price: e.target.value }))
                     }
+                    required
                   />
                 </div>
                 <div>

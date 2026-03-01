@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props) {
     return {
       title: product.metaTitle || product.name,
       description: plainDescription,
+      alternates: { canonical: `/coral/${slug}` },
       openGraph: {
         title: product.metaTitle || product.name,
         description: plainDescription,
@@ -65,7 +66,7 @@ export default async function CoralProductPage({ params, searchParams }: Props) 
   const rootLabel = breadcrumbFrom === "collections" ? "Collections" : "Store";
   const rootHref = breadcrumbFrom === "collections" ? "/collections" : "/store";
 
-  const jsonLd = {
+  const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
@@ -81,6 +82,9 @@ export default async function CoralProductPage({ params, searchParams }: Props) 
           : "https://schema.org/OutOfStock",
     },
   };
+  if (product.sku) {
+    jsonLd.sku = product.sku;
+  }
 
   const attributes = product.attributes ?? {};
   const hasAttributes =
@@ -135,7 +139,7 @@ export default async function CoralProductPage({ params, searchParams }: Props) 
                 </span>
               )}
             </p>
-            <AddToCartButton productId={product._id} className="mt-0" />
+            <AddToCartButton productId={product._id} availableQuantity={qty} className="mt-0" />
           </div>
           {hasContent(product.description) && (
             <div className="card bg-base-100 shadow mt-6">

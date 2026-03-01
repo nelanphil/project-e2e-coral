@@ -12,7 +12,21 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   try {
     const category = await fetchApi<Category>(`/api/categories/${encodeURIComponent(slug)}`);
-    return { title: category.name };
+    const description = `Browse ${category.name} corals`;
+    return {
+      title: category.name,
+      description,
+      alternates: { canonical: `/category/${slug}` },
+      openGraph: {
+        title: category.name,
+        description,
+      },
+      twitter: {
+        card: "summary" as const,
+        title: category.name,
+        description,
+      },
+    };
   } catch {
     return { title: "Category" };
   }

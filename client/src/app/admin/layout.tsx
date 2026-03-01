@@ -36,7 +36,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-base-200 px-4 py-4 sm:p-6 flex flex-col lg:flex-row gap-4">
       {/* Mobile: backdrop when sidebar open */}
       <div
-        className={`fixed top-32 left-0 right-0 bottom-0 z-30 bg-black/50 lg:hidden transition-opacity duration-200 ${
+        className={`fixed top-[var(--header-height)] left-0 right-0 bottom-0 z-30 bg-black/50 lg:hidden transition-opacity duration-200 ${
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden={!sidebarOpen}
@@ -47,7 +47,7 @@ export default function AdminLayout({
       <aside
         className={`
           card bg-base-100 shadow w-56 shrink-0 self-start
-          fixed top-32 left-0 z-40 h-[calc(100vh-8rem)] transform transition-transform duration-200 ease-out
+          fixed top-[var(--header-height)] left-0 z-40 h-[calc(100vh-var(--header-height))] transform transition-transform duration-200 ease-out
           lg:static lg:top-auto lg:h-auto lg:translate-x-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
@@ -106,6 +106,16 @@ export default function AdminLayout({
             <li>
               <Link href="/admin/orders" onClick={closeSidebar}>
                 Orders
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/shipping" onClick={closeSidebar}>
+                Shipping
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/rewards" onClick={closeSidebar}>
+                Rewards
               </Link>
             </li>
           </ul>

@@ -13,6 +13,17 @@ ordersRouter.get("/", requireAuth, async (req, res) => {
   res.json({ orders });
 });
 
+ordersRouter.get("/confirmation/:orderId", async (req, res) => {
+  const order = await Order.findById(req.params.orderId)
+    .populate("lineItems.product", "name slug images")
+    .lean();
+  if (!order) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json(order);
+});
+
 ordersRouter.get("/:id", requireAuth, async (req, res) => {
   const userId = (req as AuthRequest).userId;
   const order = (await Order.findById(req.params.id).populate("lineItems.product").lean()) as IOrder | null;

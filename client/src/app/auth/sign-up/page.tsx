@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
@@ -13,6 +13,12 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
+  const safeRedirect =
+    redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+      ? redirectTo
+      : "/";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +37,7 @@ export default function SignUpPage() {
         return;
       }
       login(data.token, data.user);
-      router.push("/");
+      router.push(safeRedirect);
       router.refresh();
     } catch {
       setError("Network error");
@@ -84,7 +90,10 @@ export default function SignUpPage() {
             </button>
           </form>
           <p className="text-center text-sm text-base-content/80 mt-2">
-            Already have an account? <Link href="/auth/login" className="link">Log in</Link>
+            Already have an account?{" "}
+            <Link href={redirectTo ? `/auth/login?redirect=${encodeURIComponent(redirectTo)}` : "/auth/login"} className="link">
+              Log in
+            </Link>
           </p>
         </div>
       </div>

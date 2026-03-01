@@ -198,7 +198,7 @@ export function StoreView({
       {/* Left sidebar: filters in card — below nav on mobile */}
       <aside
         className={`
-          fixed left-0 top-32 z-50 h-[calc(100vh-8rem)] w-64 shrink-0 transform transition-transform duration-200 ease-out lg:top-0 lg:h-full lg:static lg:z-auto lg:block lg:translate-x-0
+          fixed left-0 top-[var(--header-height)] z-50 h-[calc(100vh-var(--header-height))] w-64 shrink-0 transform transition-transform duration-200 ease-out lg:top-0 lg:h-full lg:static lg:z-auto lg:block lg:translate-x-0
           ${mobileFiltersOpen ? "translate-x-0" : "-translate-x-full"}
         `}
         aria-label="Filters"
@@ -499,7 +499,7 @@ export function StoreView({
                             </span>
                           )}
                       </p>
-                      <AddToCartButton productId={p._id} className="btn-sm mt-0 shrink-0" />
+                      <AddToCartButton productId={p._id} availableQuantity={p.inventory?.quantity} className="btn-sm mt-0 shrink-0" />
                     </div>
                   </div>
                 </li>

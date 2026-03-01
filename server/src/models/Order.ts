@@ -18,13 +18,26 @@ export interface IShippingAddress {
 export interface IOrder {
   _id: mongoose.Types.ObjectId;
   user?: mongoose.Types.ObjectId;
+  cartSessionId?: string;
   lineItems: IOrderLineItem[];
   shippingAddress: IShippingAddress;
   status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+  taxAmount?: number;
+  shippingAmount?: number;
   stripePaymentIntentId?: string;
   stripeCheckoutSessionId?: string;
   paypalOrderId?: string;
   trackingNumber?: string;
+  pointsApplied?: number;
+  pointsDiscountCents?: number;
+  ipAddress?: string;
+  userAgent?: string;
+  referer?: string;
+  acceptLanguage?: string;
+  cookieId?: string;
+  geoCountry?: string;
+  geoRegion?: string;
+  geoCity?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +66,7 @@ const shippingAddressSchema = new Schema<IShippingAddress>(
 const orderSchema = new Schema<IOrder>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User" },
+    cartSessionId: { type: String },
     lineItems: [lineItemSchema],
     shippingAddress: { type: shippingAddressSchema, required: true },
     status: {
@@ -60,15 +74,28 @@ const orderSchema = new Schema<IOrder>(
       enum: ["pending", "paid", "shipped", "delivered", "cancelled"],
       default: "pending",
     },
+    taxAmount: { type: Number },
+    shippingAmount: { type: Number },
     stripePaymentIntentId: { type: String },
     stripeCheckoutSessionId: { type: String },
     paypalOrderId: { type: String },
     trackingNumber: { type: String },
+    pointsApplied: { type: Number },
+    pointsDiscountCents: { type: Number },
+    ipAddress: { type: String },
+    userAgent: { type: String },
+    referer: { type: String },
+    acceptLanguage: { type: String },
+    cookieId: { type: String },
+    geoCountry: { type: String },
+    geoRegion: { type: String },
+    geoCity: { type: String },
   },
   { timestamps: true }
 );
 
 orderSchema.index({ user: 1 });
 orderSchema.index({ status: 1 });
+orderSchema.index({ cartSessionId: 1, status: 1 });
 
 export const Order = mongoose.models.Order ?? model<IOrder>("Order", orderSchema);

@@ -31,7 +31,7 @@ export function Nav() {
   return (
     <>
       <header
-        className={`navbar min-h-30 py-4 flex items-center fixed top-0 left-0 right-0 z-50 bg-base-100 transition-all duration-300 ${isCartOpen ? "blur-sm opacity-75" : ""}`}
+        className={`navbar min-h-30 py-4 flex items-center bg-base-100 transition-all duration-300 ${isCartOpen ? "blur-sm opacity-75" : ""}`}
       >
         <div className="w-full px-6 flex items-center gap-2">
           {/* Left: hamburger on mobile (when logged in) */}

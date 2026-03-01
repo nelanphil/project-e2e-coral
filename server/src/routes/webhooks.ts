@@ -1,8 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import Stripe from "stripe";
 import { Order } from "../models/Order.js";
-import { Inventory } from "../models/Inventory.js";
-import { InventoryLog } from "../models/InventoryLog.js";
+import { User } from "../models/User.js";
+import { RewardsSettings } from "../models/RewardsSettings.js";
+import { RewardLog } from "../models/RewardLog.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -39,19 +40,36 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         order.status = "paid";
         if (session.payment_intent) order.stripePaymentIntentId = String(session.payment_intent);
         await order.save();
-        for (const item of order.lineItems) {
-          const inv = await Inventory.findOne({ product: item.product });
-          if (inv) {
-            const oldQty = inv.quantity;
-            const newQty = oldQty - item.quantity;
-            inv.quantity = newQty;
-            await inv.save();
-            await InventoryLog.create({
-              product: item.product,
-              quantityBefore: oldQty,
-              quantityAfter: newQty,
-              change: -item.quantity,
-              reason: "sale",
+
+        const userId = order.user?.toString();
+        const pointsApplied = order.pointsApplied ?? 0;
+        const pointsDiscountCents = order.pointsDiscountCents ?? 0;
+
+        if (userId && pointsApplied > 0) {
+          await User.findByIdAndUpdate(userId, { $inc: { pointsBalance: -pointsApplied } });
+          await RewardLog.create({
+            user: userId,
+            type: "spent",
+            points: -pointsApplied,
+            order: order._id,
+            description: `Order #${orderId.toString().slice(-6).toUpperCase()}`,
+          });
+        }
+
+        const rewardsSettings = await RewardsSettings.findOne().lean() as { pointsPerDollar?: number } | null;
+        const pointsPerDollar = rewardsSettings?.pointsPerDollar ?? 10;
+        if (userId && pointsPerDollar > 0) {
+          const subtotal = order.lineItems.reduce((sum: number, li: { price: number; quantity: number }) => sum + li.price * li.quantity, 0);
+          const orderTotalCents = subtotal + (order.shippingAmount ?? 0) + (order.taxAmount ?? 0) - pointsDiscountCents;
+          const pointsEarned = Math.floor((orderTotalCents / 100) * pointsPerDollar);
+          if (pointsEarned > 0) {
+            await User.findByIdAndUpdate(userId, { $inc: { pointsBalance: pointsEarned } });
+            await RewardLog.create({
+              user: userId,
+              type: "earned",
+              points: pointsEarned,
+              order: order._id,
+              description: `Order #${orderId.toString().slice(-6).toUpperCase()}`,
             });
           }
         }

@@ -2,8 +2,18 @@
 
 import { create } from "zustand";
 import type { CartItem, CartResponse } from "@/lib/types";
+import { getVisitorId } from "@/lib/visitor";
 
 const CART_SESSION_KEY = "cart_session_id";
+
+function getCartHeaders(): HeadersInit {
+  const headers: Record<string, string> = {};
+  const sessionId = typeof window !== "undefined" ? localStorage.getItem(CART_SESSION_KEY) : null;
+  if (sessionId) headers["X-Cart-Session"] = sessionId;
+  const visitorId = getVisitorId();
+  if (visitorId) headers["X-Cookie-Id"] = visitorId;
+  return headers;
+}
 
 function getStoredSessionId(): string | null {
   if (typeof window === "undefined") return null;
@@ -24,6 +34,8 @@ export interface CartState {
   setCartFromResponse: (data: CartResponse) => void;
   addItem: (productId: string, quantity?: number) => Promise<void>;
   removeItem: (productId: string) => Promise<void>;
+  updateQuantity: (productId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
 }
 
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
@@ -35,9 +47,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   fetchCart: async () => {
     set({ loading: true });
-    const sessionId = getStoredSessionId();
-    const headers: HeadersInit = {};
-    if (sessionId) (headers as Record<string, string>)["X-Cart-Session"] = sessionId;
+    const headers = getCartHeaders();
     try {
       const res = await fetch(`${getApiUrl()}/api/cart`, { headers });
       const data: CartResponse = res.ok ? await res.json() : { items: [], sessionId: null };
@@ -54,9 +64,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   addItem: async (productId: string, quantity = 1) => {
-    const sessionId = getStoredSessionId();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (sessionId) (headers as Record<string, string>)["X-Cart-Session"] = sessionId;
+    const headers: HeadersInit = { "Content-Type": "application/json", ...getCartHeaders() };
     const res = await fetch(`${getApiUrl()}/api/cart`, {
       method: "POST",
       headers,
@@ -72,7 +80,35 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (!sessionId) return;
     const res = await fetch(`${getApiUrl()}/api/cart/${productId}`, {
       method: "DELETE",
-      headers: { "X-Cart-Session": sessionId },
+      headers: getCartHeaders(),
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as CartResponse;
+    get().setCartFromResponse(data);
+  },
+
+  updateQuantity: async (productId: string, quantity: number) => {
+    const sessionId = getStoredSessionId();
+    if (!sessionId) return;
+    const res = await fetch(`${getApiUrl()}/api/cart/${productId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...getCartHeaders(),
+      },
+      body: JSON.stringify({ quantity }),
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as CartResponse;
+    get().setCartFromResponse(data);
+  },
+
+  clearCart: async () => {
+    const sessionId = getStoredSessionId();
+    if (!sessionId) return;
+    const res = await fetch(`${getApiUrl()}/api/cart/clear`, {
+      method: "POST",
+      headers: getCartHeaders(),
     });
     if (!res.ok) return;
     const data = (await res.json()) as CartResponse;

@@ -13,6 +13,7 @@ import { checkoutRouter } from "./routes/checkout.js";
 import { handleStripeWebhook, webhooksRouter } from "./routes/webhooks.js";
 import { newsletterRouter } from "./routes/newsletter.js";
 import { uploadRouter } from "./routes/upload.js";
+import { rewardsRouter } from "./routes/rewards.js";
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/checkout", checkoutRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/newsletter", newsletterRouter);
 app.use("/api/upload", uploadRouter);
+app.use("/api/rewards", rewardsRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

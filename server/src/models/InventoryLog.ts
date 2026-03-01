@@ -6,7 +6,7 @@ export interface IInventoryLog {
   quantityBefore: number;
   quantityAfter: number;
   change: number;
-  reason: "manual" | "sale" | "restock" | "adjustment";
+  reason: "manual" | "sale" | "restock" | "adjustment" | "cart_add" | "cart_remove";
   notes?: string;
   performedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -21,7 +21,7 @@ const inventoryLogSchema = new Schema<IInventoryLog>(
     change: { type: Number, required: true },
     reason: {
       type: String,
-      enum: ["manual", "sale", "restock", "adjustment"],
+      enum: ["manual", "sale", "restock", "adjustment", "cart_add", "cart_remove"],
       required: true,
     },
     notes: { type: String, default: "" },

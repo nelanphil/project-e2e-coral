@@ -6,6 +6,7 @@ export interface IUser {
   passwordHash?: string;
   name: string;
   role: "customer" | "admin" | "guest";
+  pointsBalance?: number;
   cookieId?: string;
   ipAddress?: string;
   userAgent?: string;
@@ -22,6 +23,7 @@ const userSchema = new Schema<IUser>(
     passwordHash: { type: String, required: false },
     name: { type: String, default: "" },
     role: { type: String, enum: ["customer", "admin", "guest"], default: "customer" },
+    pointsBalance: { type: Number, default: 0 },
     cookieId: { type: String, sparse: true },
     ipAddress: { type: String },
     userAgent: { type: String },

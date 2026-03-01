@@ -8,6 +8,23 @@
   --font-mono: var(--font-geist-mono);
 }
 
+:root {
+  --header-height: 10.5rem;
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(100vw);
+  }
+  100% {
+    transform: translateX(calc(100vw - 50%));
+  }
+}
+
+.animate-ticker {
+  animation: ticker 25s linear infinite;
+}
+
 body {
   background: var(--color-base-100);
   color: var(--color-base-content);

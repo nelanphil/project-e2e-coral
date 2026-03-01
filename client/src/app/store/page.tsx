@@ -4,7 +4,17 @@ import { StoreView } from "@/components/store/StoreView";
 
 export const metadata = {
   title: "Store",
-  description: "Browse all corals",
+  description: "Browse all corals available in our store",
+  alternates: { canonical: "/store" },
+  openGraph: {
+    title: "Store",
+    description: "Browse all corals available in our store",
+  },
+  twitter: {
+    card: "summary",
+    title: "Store",
+    description: "Browse all corals available in our store",
+  },
 };
 
 const ALLOWED_LIMITS = [50, 100, 150] as const;

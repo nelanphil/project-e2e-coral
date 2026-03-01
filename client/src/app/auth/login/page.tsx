@@ -80,7 +80,7 @@ export default function LoginPage() {
             </button>
           </form>
           <p className="text-center text-sm text-base-content/80 mt-2">
-            Don’t have an account? <Link href="/auth/sign-up" className="link">Sign up</Link>
+            Don’t have an account? <Link href={redirectTo ? `/auth/sign-up?redirect=${encodeURIComponent(redirectTo)}` : "/auth/sign-up"} className="link">Sign up</Link>
           </p>
         </div>
       </div>

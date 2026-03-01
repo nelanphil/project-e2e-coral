@@ -92,6 +92,34 @@ export interface InventoryLog {
   createdAt: string;
 }
 
+export interface OrderProduct {
+  _id: string;
+  name: string;
+  slug: string;
+  images: string[];
+}
+
+export interface OrderLineItem {
+  product: OrderProduct;
+  quantity: number;
+  price: number; // cents
+}
+
+export interface OrderConfirmation {
+  _id: string;
+  lineItems: OrderLineItem[];
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  status: string;
+  createdAt: string;
+}
+
 export interface PriceLog {
   _id: string;
   product: string;

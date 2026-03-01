@@ -6,7 +6,17 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Collections",
-  description: "Browse our collections",
+  description: "Browse our curated coral collections",
+  alternates: { canonical: "/collections" },
+  openGraph: {
+    title: "Collections",
+    description: "Browse our curated coral collections",
+  },
+  twitter: {
+    card: "summary",
+    title: "Collections",
+    description: "Browse our curated coral collections",
+  },
 };
 
 export default async function CollectionsPage() {
