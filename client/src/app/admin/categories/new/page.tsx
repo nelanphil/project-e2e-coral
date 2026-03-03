@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
@@ -24,10 +24,6 @@ export default function NewCategoryPage() {
   const [form, setForm] = useState({ name: "", slug: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setForm((f) => ({ ...f, slug: slugify(f.name) }));
-  }, [form.name]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,7 +67,11 @@ export default function NewCategoryPage() {
                 className="input input-bordered w-full"
                 value={form.name}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
+                  setForm((f) => ({
+                    ...f,
+                    name: e.target.value,
+                    slug: slugify(e.target.value),
+                  }))
                 }
                 placeholder="e.g. Electronics"
                 required
@@ -89,8 +89,7 @@ export default function NewCategoryPage() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={loading}
-              >
+                disabled={loading}>
                 {loading ? "Creating…" : "Create"}
               </button>
               <Link href="/admin/categories" className="btn btn-ghost">

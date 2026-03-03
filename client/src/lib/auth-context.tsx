@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { getAuthToken, setAuthToken, clearAuthToken } from "./auth";
 import type { UserInfo } from "./types";
 import { useUserStore } from "@/stores/user-store";
@@ -15,7 +22,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const getBaseUrl = () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const getBaseUrl = () =>
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<UserInfo | null>(null);
@@ -24,10 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginStore = useUserStore((s) => s.login);
   const logoutStore = useUserStore((s) => s.logout);
 
-  const setUser = useCallback((u: UserInfo | null) => {
-    setUserState(u);
-    setUserStore(u);
-  }, [setUserStore]);
+  const setUser = useCallback(
+    (u: UserInfo | null) => {
+      setUserState(u);
+      setUserStore(u);
+    },
+    [setUserStore],
+  );
 
   const logout = useCallback(() => {
     clearAuthToken();
@@ -35,17 +46,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logoutStore();
   }, [logoutStore]);
 
-  const login = useCallback((token: string, u: UserInfo) => {
-    setAuthToken(token);
-    setUserState(u);
-    loginStore(token, u);
-  }, [loginStore]);
+  const login = useCallback(
+    (token: string, u: UserInfo) => {
+      setAuthToken(token);
+      setUserState(u);
+      loginStore(token, u);
+    },
+    [loginStore],
+  );
 
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
-      setLoading(false);
-      return;
+      const t = setTimeout(() => setLoading(false), 0);
+      return () => clearTimeout(t);
     }
     fetch(`${getBaseUrl()}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },

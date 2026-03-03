@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
@@ -193,8 +194,8 @@ export default function EditProductPage() {
         revalidateProducts(),
       ]);
       router.push(backHref);
-    } catch (err: any) {
-      setError(err.message || "Failed to save product");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to save product");
     } finally {
       setLoading(false);
     }
@@ -234,8 +235,8 @@ export default function EditProductPage() {
         urls.push(data.url);
       }
       setForm((f) => ({ ...f, images: [...f.images, ...urls] }));
-    } catch (err: any) {
-      setError(err.message || "Image upload failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Image upload failed");
     } finally {
       setUploading(false);
     }
@@ -351,50 +352,43 @@ export default function EditProductPage() {
               <button
                 type="button"
                 className={`tab ${activeTab === "details" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("details")}
-              >
+                onClick={() => setActiveTab("details")}>
                 Details
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "images" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("images")}
-              >
+                onClick={() => setActiveTab("images")}>
                 Images
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "pricing" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("pricing")}
-              >
+                onClick={() => setActiveTab("pricing")}>
                 Pricing
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "inventory" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("inventory")}
-              >
+                onClick={() => setActiveTab("inventory")}>
                 Inventory
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "collections" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("collections")}
-              >
+                onClick={() => setActiveTab("collections")}>
                 Collections
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "attributes" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("attributes")}
-              >
+                onClick={() => setActiveTab("attributes")}>
                 Attributes
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "seo" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("seo")}
-              >
+                onClick={() => setActiveTab("seo")}>
                 SEO
               </button>
             </div>
@@ -472,8 +466,7 @@ export default function EditProductPage() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, category: e.target.value }))
                     }
-                    required
-                  >
+                    required>
                     <option value="">Select a category</option>
                     {categories.map((c) => (
                       <option key={c._id} value={c._id}>
@@ -514,8 +507,7 @@ export default function EditProductPage() {
                     onClick={() => {
                       if (!uploading)
                         document.getElementById("image-file-input")?.click();
-                    }}
-                  >
+                    }}>
                     {uploading ? (
                       <div className="flex flex-col items-center gap-2">
                         <span className="loading loading-spinner loading-md" />
@@ -531,8 +523,7 @@ export default function EditProductPage() {
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
-                          strokeWidth={1.5}
-                        >
+                          strokeWidth={1.5}>
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -583,8 +574,7 @@ export default function EditProductPage() {
                     <button
                       type="button"
                       className="btn btn-primary btn-sm"
-                      onClick={addImage}
-                    >
+                      onClick={addImage}>
                       Add URL
                     </button>
                   </div>
@@ -595,13 +585,15 @@ export default function EditProductPage() {
                     {form.images.map((url, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
-                      >
+                        className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
                         <div className="flex-1 flex items-center gap-2 min-w-0">
-                          <img
+                          <Image
                             src={url}
                             alt={`Product ${index + 1}`}
+                            width={64}
+                            height={64}
                             className="w-16 h-16 object-cover rounded shrink-0"
+                            unoptimized
                           />
                           <span className="text-sm truncate flex-1">{url}</span>
                         </div>
@@ -610,23 +602,20 @@ export default function EditProductPage() {
                             type="button"
                             className="btn btn-ghost btn-xs"
                             onClick={() => moveImage(index, "up")}
-                            disabled={index === 0}
-                          >
+                            disabled={index === 0}>
                             ↑
                           </button>
                           <button
                             type="button"
                             className="btn btn-ghost btn-xs"
                             onClick={() => moveImage(index, "down")}
-                            disabled={index === form.images.length - 1}
-                          >
+                            disabled={index === form.images.length - 1}>
                             ↓
                           </button>
                           <button
                             type="button"
                             className="btn btn-error btn-xs"
-                            onClick={() => removeImage(index)}
-                          >
+                            onClick={() => removeImage(index)}>
                             Remove
                           </button>
                         </div>
@@ -726,8 +715,7 @@ export default function EditProductPage() {
                           | "correction"
                           | "other",
                       }))
-                    }
-                  >
+                    }>
                     <option value="correction">Correction</option>
                     <option value="promotion">Promotion / Sale</option>
                     <option value="cost_change">Supplier cost change</option>
@@ -757,16 +745,14 @@ export default function EditProductPage() {
                 <div className="flex gap-2 pt-2">
                   <Link
                     href={`/admin/inventory/${id}?tab=price`}
-                    className="btn btn-outline btn-sm"
-                  >
+                    className="btn btn-outline btn-sm">
                     View Price Log
                   </Link>
                 </div>
               </div>
 
               <div
-                className={activeTab !== "inventory" ? "hidden" : "space-y-4"}
-              >
+                className={activeTab !== "inventory" ? "hidden" : "space-y-4"}>
                 {adminUser && (
                   <div className="flex items-center gap-2 p-3 bg-base-200 rounded-lg text-sm">
                     <span className="font-medium">Adjusting as:</span>
@@ -804,8 +790,7 @@ export default function EditProductPage() {
                           | "restock"
                           | "adjustment",
                       }))
-                    }
-                  >
+                    }>
                     <option value="manual">Manual correction</option>
                     <option value="restock">Restock</option>
                     <option value="adjustment">
@@ -835,22 +820,21 @@ export default function EditProductPage() {
                 <div className="flex gap-2 pt-2">
                   <Link
                     href={`/admin/inventory/${id}`}
-                    className="btn btn-outline btn-sm"
-                  >
+                    className="btn btn-outline btn-sm">
                     View Inventory Log
                   </Link>
                   <Link
                     href={`/admin/inventory/${id}?tab=price`}
-                    className="btn btn-outline btn-sm"
-                  >
+                    className="btn btn-outline btn-sm">
                     View Price Log
                   </Link>
                 </div>
               </div>
 
               <div
-                className={activeTab !== "collections" ? "hidden" : "space-y-4"}
-              >
+                className={
+                  activeTab !== "collections" ? "hidden" : "space-y-4"
+                }>
                 <div className="rounded-xl border border-base-300 bg-base-200/50 p-5">
                   <div className="mb-1">
                     <h3 className="text-lg font-semibold">Collections</h3>
@@ -864,8 +848,7 @@ export default function EditProductPage() {
                         No collections available.{" "}
                         <Link
                           href="/admin/collections/new"
-                          className="link link-primary font-medium"
-                        >
+                          className="link link-primary font-medium">
                           Create one
                         </Link>
                       </p>
@@ -888,8 +871,7 @@ export default function EditProductPage() {
                                 isSelected
                                   ? "border-primary bg-primary/10"
                                   : "border-base-300 bg-base-100 hover:border-base-content/20 hover:bg-base-100"
-                              }`}
-                            >
+                              }`}>
                               <input
                                 type="checkbox"
                                 className="checkbox checkbox-sm checkbox-primary"
@@ -911,8 +893,7 @@ export default function EditProductPage() {
               </div>
 
               <div
-                className={activeTab !== "attributes" ? "hidden" : "space-y-4"}
-              >
+                className={activeTab !== "attributes" ? "hidden" : "space-y-4"}>
                 <div>
                   <label className="label">
                     <span className="label-text">Custom Attributes</span>
@@ -945,8 +926,7 @@ export default function EditProductPage() {
                     <button
                       type="button"
                       className="btn btn-primary"
-                      onClick={addAttribute}
-                    >
+                      onClick={addAttribute}>
                       Add
                     </button>
                   </div>
@@ -955,15 +935,13 @@ export default function EditProductPage() {
                       {Object.entries(form.attributes).map(([key, value]) => (
                         <div
                           key={key}
-                          className="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
-                        >
+                          className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
                           <span className="font-medium flex-1">{key}:</span>
                           <span className="flex-1">{value}</span>
                           <button
                             type="button"
                             className="btn btn-error btn-xs"
-                            onClick={() => removeAttribute(key)}
-                          >
+                            onClick={() => removeAttribute(key)}>
                             Remove
                           </button>
                         </div>
@@ -1025,8 +1003,7 @@ export default function EditProductPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={loading}
-                >
+                  disabled={loading}>
                   {loading ? (
                     <>
                       <span className="loading loading-spinner loading-sm" />

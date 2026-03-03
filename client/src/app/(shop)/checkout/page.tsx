@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getCartSessionId } from "@/lib/cart/cart-session";
@@ -44,7 +44,9 @@ function AddressForm({
   return (
     <div className="space-y-4">
       <div>
-        <label className="label" htmlFor={`${prefix}-line1`}>Address line 1</label>
+        <label className="label" htmlFor={`${prefix}-line1`}>
+          Address line 1
+        </label>
         <input
           id={`${prefix}-line1`}
           type="text"
@@ -55,7 +57,9 @@ function AddressForm({
         />
       </div>
       <div>
-        <label className="label" htmlFor={`${prefix}-line2`}>Address line 2</label>
+        <label className="label" htmlFor={`${prefix}-line2`}>
+          Address line 2
+        </label>
         <input
           id={`${prefix}-line2`}
           type="text"
@@ -66,7 +70,9 @@ function AddressForm({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label" htmlFor={`${prefix}-city`}>City</label>
+          <label className="label" htmlFor={`${prefix}-city`}>
+            City
+          </label>
           <input
             id={`${prefix}-city`}
             type="text"
@@ -77,7 +83,9 @@ function AddressForm({
           />
         </div>
         <div>
-          <label className="label" htmlFor={`${prefix}-state`}>State</label>
+          <label className="label" htmlFor={`${prefix}-state`}>
+            State
+          </label>
           <input
             id={`${prefix}-state`}
             type="text"
@@ -90,18 +98,24 @@ function AddressForm({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="label" htmlFor={`${prefix}-postalCode`}>Postal code</label>
+          <label className="label" htmlFor={`${prefix}-postalCode`}>
+            Postal code
+          </label>
           <input
             id={`${prefix}-postalCode`}
             type="text"
             className="input input-bordered w-full"
             value={address.postalCode}
-            onChange={(e) => onChange({ ...address, postalCode: e.target.value })}
+            onChange={(e) =>
+              onChange({ ...address, postalCode: e.target.value })
+            }
             required
           />
         </div>
         <div>
-          <label className="label" htmlFor={`${prefix}-country`}>Country</label>
+          <label className="label" htmlFor={`${prefix}-country`}>
+            Country
+          </label>
           <input
             id={`${prefix}-country`}
             type="text"
@@ -125,67 +139,119 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
-  const [billingAddress, setBillingAddress] = useState<AddressFields>(emptyAddress);
+  const [billingAddress, setBillingAddress] =
+    useState<AddressFields>(emptyAddress);
   const [shippingSameAsBilling, setShippingSameAsBilling] = useState(true);
-  const [shippingAddress, setShippingAddress] = useState<AddressFields>(emptyAddress);
-  const [billingValidationError, setBillingValidationError] = useState<string | null>(null);
-  const [shippingValidationError, setShippingValidationError] = useState<string | null>(null);
+  const [shippingAddress, setShippingAddress] =
+    useState<AddressFields>(emptyAddress);
   const [taxAmount, setTaxAmount] = useState<number | null>(null);
-  const [shippingRates, setShippingRates] = useState<{ objectId: string; provider: string; servicelevel: { name: string }; amount: string; durationTerms?: string }[]>([]);
-  const [selectedRate, setSelectedRate] = useState<{ objectId: string; amountCents: number } | null>(null);
+  const [shippingRates, setShippingRates] = useState<
+    {
+      objectId: string;
+      provider: string;
+      servicelevel: { name: string };
+      amount: string;
+      durationTerms?: string;
+    }[]
+  >([]);
+  const [selectedRate, setSelectedRate] = useState<{
+    objectId: string;
+    amountCents: number;
+  } | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [pointsBalance, setPointsBalance] = useState<number | null>(null);
   const [pointsToCents, setPointsToCents] = useState<number>(100);
   const [pointsPerDollar, setPointsPerDollar] = useState<number>(10);
   const [pointsToApply, setPointsToApply] = useState<number>(0);
+  const [emailExists, setEmailExists] = useState(false);
+  const [emailCheckLoading, setEmailCheckLoading] = useState(false);
+  const [discountCodeInput, setDiscountCodeInput] = useState("");
+  const [discountCode, setDiscountCode] = useState<string | null>(null);
+  const [discountAmountCents, setDiscountAmountCents] = useState(0);
+  const [discountType, setDiscountType] = useState<
+    "product" | "shipping" | null
+  >(null);
+  const [discountMessage, setDiscountMessage] = useState<string | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(0);
   const taxFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shippingFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const effectiveShippingAddress = shippingSameAsBilling ? billingAddress : shippingAddress;
-  const shippingAmount = selectedRate?.amountCents ?? 0;
-
+  // Debounced email existence check for guest checkout
   useEffect(() => {
+    if (user || !isValidEmail(email)) {
+      setEmailExists(false);
+      setEmailCheckLoading(false);
+      return;
+    }
+    setEmailCheckLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+        const res = await fetch(`${baseUrl}/api/auth/check-email`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        setEmailExists(!!data.exists);
+      } catch {
+        setEmailExists(false);
+      }
+      setEmailCheckLoading(false);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [email, user]);
+
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+  const effectiveShippingAddress = useMemo(
+    () => (shippingSameAsBilling ? billingAddress : shippingAddress),
+    [shippingSameAsBilling, billingAddress, shippingAddress],
+  );
+  const shippingAmount = selectedRate?.amountCents ?? 0;
+  const billingValidationError = useMemo(() => {
+    if (!billingAddress.postalCode || !billingAddress.state) return null;
     const result = validatePostalCodeMatchesState(
       billingAddress.postalCode,
       billingAddress.state,
-      billingAddress.country
+      billingAddress.country,
     );
-    if (billingAddress.postalCode && billingAddress.state) {
-      setBillingValidationError(result.valid ? null : (result.message ?? null));
-    } else {
-      setBillingValidationError(null);
-    }
+    return result.valid ? null : (result.message ?? null);
   }, [billingAddress.postalCode, billingAddress.state, billingAddress.country]);
-
-  useEffect(() => {
-    if (shippingSameAsBilling) {
-      setShippingValidationError(null);
-      return;
-    }
+  const shippingValidationError = useMemo(() => {
+    if (shippingSameAsBilling) return null;
+    if (!shippingAddress.postalCode || !shippingAddress.state) return null;
     const result = validatePostalCodeMatchesState(
       shippingAddress.postalCode,
       shippingAddress.state,
-      shippingAddress.country
+      shippingAddress.country,
     );
-    if (shippingAddress.postalCode && shippingAddress.state) {
-      setShippingValidationError(result.valid ? null : (result.message ?? null));
-    } else {
-      setShippingValidationError(null);
-    }
-  }, [shippingSameAsBilling, shippingAddress.postalCode, shippingAddress.state, shippingAddress.country]);
+    return result.valid ? null : (result.message ?? null);
+  }, [
+    shippingSameAsBilling,
+    shippingAddress.postalCode,
+    shippingAddress.state,
+    shippingAddress.country,
+  ]);
 
   useEffect(() => {
     const state = effectiveShippingAddress.state?.toUpperCase().trim();
-    const zip = effectiveShippingAddress.postalCode?.replace(/\D/g, "").slice(0, 5);
+    const zip = effectiveShippingAddress.postalCode
+      ?.replace(/\D/g, "")
+      .slice(0, 5);
     if (state !== "FL" || !zip || zip.length !== 5) {
-      setTaxAmount(0);
-      return;
+      const t = setTimeout(() => setTaxAmount(0), 0);
+      return () => clearTimeout(t);
     }
     if (taxFetchRef.current) clearTimeout(taxFetchRef.current);
     taxFetchRef.current = setTimeout(async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
         const res = await fetch(`${baseUrl}/api/checkout/tax-estimate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -205,14 +271,22 @@ export default function CheckoutPage() {
     return () => {
       if (taxFetchRef.current) clearTimeout(taxFetchRef.current);
     };
-  }, [effectiveShippingAddress.state, effectiveShippingAddress.postalCode, subtotal]);
+  }, [effectiveShippingAddress, subtotal]);
 
   useEffect(() => {
     const addr = effectiveShippingAddress;
-    if (!addr.line1 || !addr.city || !addr.state || !addr.postalCode || !addr.country) {
-      setShippingRates([]);
-      setSelectedRate(null);
-      return;
+    if (
+      !addr.line1 ||
+      !addr.city ||
+      !addr.state ||
+      !addr.postalCode ||
+      !addr.country
+    ) {
+      const t = setTimeout(() => {
+        setShippingRates([]);
+        setSelectedRate(null);
+      }, 0);
+      return () => clearTimeout(t);
     }
     if (shippingFetchRef.current) clearTimeout(shippingFetchRef.current);
     shippingFetchRef.current = setTimeout(async () => {
@@ -225,7 +299,8 @@ export default function CheckoutPage() {
           setShippingLoading(false);
           return;
         }
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
         const res = await fetch(`${baseUrl}/api/checkout/shipping-rates`, {
           method: "POST",
           headers: {
@@ -240,7 +315,7 @@ export default function CheckoutPage() {
         if (rates.length > 0) {
           const cheapest = rates.reduce(
             (a: { amount: string }, b: { amount: string }) =>
-              parseFloat(a.amount) < parseFloat(b.amount) ? a : b
+              parseFloat(a.amount) < parseFloat(b.amount) ? a : b,
           );
           const amountCents = Math.round(parseFloat(cheapest.amount) * 100);
           setSelectedRate({ objectId: cheapest.objectId, amountCents });
@@ -257,13 +332,7 @@ export default function CheckoutPage() {
     return () => {
       if (shippingFetchRef.current) clearTimeout(shippingFetchRef.current);
     };
-  }, [
-    effectiveShippingAddress.line1,
-    effectiveShippingAddress.city,
-    effectiveShippingAddress.state,
-    effectiveShippingAddress.postalCode,
-    effectiveShippingAddress.country,
-  ]);
+  }, [effectiveShippingAddress]);
 
   useEffect(() => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
@@ -280,10 +349,29 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+    const token = getAuthToken();
+    fetch(`${baseUrl}/api/admin/shipping`, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.freeShippingThresholdCents === "number") {
+          setFreeShippingThreshold(d.freeShippingThresholdCents);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!user) {
-      setPointsBalance(null);
-      setPointsToApply(0);
-      return;
+      const t = setTimeout(() => {
+        setPointsBalance(null);
+        setPointsToApply(0);
+      }, 0);
+      return () => clearTimeout(t);
     }
     const token = getAuthToken();
     if (!token) return;
@@ -299,12 +387,92 @@ export default function CheckoutPage() {
       .catch(() => setPointsBalance(0));
   }, [user]);
 
-  const orderTotalBeforePoints = subtotal + shippingAmount + (taxAmount ?? 0);
-  const maxRedeemableByTotal = pointsToCents > 0 ? Math.floor(orderTotalBeforePoints / (pointsToCents / 100)) : 0;
-  const maxRedeemable = pointsBalance !== null ? Math.min(pointsBalance, maxRedeemableByTotal) : 0;
-  const pointsDiscountCents = pointsToApply > 0 && pointsToCents > 0 ? Math.floor(pointsToApply * (100 / pointsToCents)) : 0;
+  const freeShippingApplied =
+    freeShippingThreshold > 0 &&
+    subtotal >= freeShippingThreshold &&
+    discountType !== "shipping";
+  const effectiveShippingAmount = freeShippingApplied
+    ? 0
+    : discountType === "shipping"
+      ? Math.max(0, shippingAmount - discountAmountCents)
+      : shippingAmount;
+  const productDiscountCents =
+    discountType === "product" ? discountAmountCents : 0;
+  const orderTotalBeforePoints =
+    subtotal -
+    productDiscountCents +
+    effectiveShippingAmount +
+    (taxAmount ?? 0);
+  const maxRedeemableByTotal =
+    pointsToCents > 0
+      ? Math.floor(orderTotalBeforePoints / (pointsToCents / 100))
+      : 0;
+  const maxRedeemable =
+    pointsBalance !== null ? Math.min(pointsBalance, maxRedeemableByTotal) : 0;
+  const pointsDiscountCents =
+    pointsToApply > 0 && pointsToCents > 0
+      ? Math.floor(pointsToApply * (100 / pointsToCents))
+      : 0;
   const orderTotal = orderTotalBeforePoints - pointsDiscountCents;
-  const pointsEarned = user && pointsPerDollar > 0 ? Math.floor((orderTotal / 100) * pointsPerDollar) : 0;
+  const pointsEarned =
+    user && pointsPerDollar > 0
+      ? Math.floor((orderTotal / 100) * pointsPerDollar)
+      : 0;
+
+  async function handleApplyDiscount() {
+    const code = discountCodeInput.trim();
+    if (!code) return;
+    setDiscountLoading(true);
+    setDiscountError(null);
+    setDiscountMessage(null);
+    try {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+      const token = getAuthToken();
+      const res = await fetch(`${baseUrl}/api/discounts/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+          ...(getVisitorId() && { "X-Cookie-Id": getVisitorId() }),
+        },
+        body: JSON.stringify({
+          code,
+          cartItems: items.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            price: i.price,
+          })),
+          subtotalCents: subtotal,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.valid) {
+        setDiscountError(data.message ?? "Invalid discount code");
+        setDiscountCode(null);
+        setDiscountAmountCents(0);
+        setDiscountType(null);
+      } else {
+        setDiscountCode(code.toUpperCase());
+        setDiscountAmountCents(data.discountAmountCents ?? 0);
+        setDiscountType(data.discountType);
+        setDiscountMessage(data.message);
+        setDiscountError(null);
+      }
+    } catch {
+      setDiscountError("Failed to validate discount code");
+    }
+    setDiscountLoading(false);
+  }
+
+  function handleRemoveDiscount() {
+    setDiscountCode(null);
+    setDiscountAmountCents(0);
+    setDiscountType(null);
+    setDiscountMessage(null);
+    setDiscountError(null);
+    setDiscountCodeInput("");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -314,9 +482,19 @@ export default function CheckoutPage() {
       setError("Email is required to complete your order.");
       return;
     }
+    if (!user && emailExists) {
+      setError("An account exists with this email. Please sign in to continue.");
+      return;
+    }
 
     const shipping = effectiveShippingAddress;
-    if (!shipping.line1 || !shipping.city || !shipping.state || !shipping.postalCode || !shipping.country) {
+    if (
+      !shipping.line1 ||
+      !shipping.city ||
+      !shipping.state ||
+      !shipping.postalCode ||
+      !shipping.country
+    ) {
       setError("Please complete the shipping address.");
       return;
     }
@@ -338,8 +516,12 @@ export default function CheckoutPage() {
       return;
     }
     const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
-    const successUrl = typeof window !== "undefined" ? `${window.location.origin}/checkout/success` : "";
-    const cancelUrl = typeof window !== "undefined" ? `${window.location.origin}/cart` : "";
+    const successUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/checkout/success`
+        : "";
+    const cancelUrl =
+      typeof window !== "undefined" ? `${window.location.origin}/cart` : "";
     const token = getAuthToken();
     try {
       const res = await fetch(`${baseUrl}/api/checkout/create`, {
@@ -358,6 +540,7 @@ export default function CheckoutPage() {
           shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
           email: user ? undefined : email,
           pointsToApply: pointsToApply > 0 ? pointsToApply : undefined,
+          discountCode: discountCode ?? undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -383,7 +566,10 @@ export default function CheckoutPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left: address forms */}
         <div className="flex-1">
-          <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
+          <form
+            id="checkout-form"
+            onSubmit={handleSubmit}
+            className="space-y-6">
             {error && <p className="text-error text-sm">{error}</p>}
 
             {!user && (
@@ -391,19 +577,18 @@ export default function CheckoutPage() {
                 <section>
                   <h2 className="font-semibold text-lg mb-4">Account</h2>
                   <p className="text-sm text-base-content/80 mb-4">
-                    Sign in to use rewards and track your orders, or continue as a guest.
+                    Sign in to use rewards and track your orders, or continue as
+                    a guest.
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <Link
                       href="/auth/login?redirect=/checkout"
-                      className="btn btn-primary"
-                    >
+                      className="btn btn-primary">
                       Sign in
                     </Link>
                     <Link
                       href="/auth/sign-up?redirect=/checkout"
-                      className="btn btn-outline"
-                    >
+                      className="btn btn-outline">
                       Sign up
                     </Link>
                   </div>
@@ -412,19 +597,45 @@ export default function CheckoutPage() {
                 <section>
                   <h2 className="font-semibold text-lg mb-4">Guest checkout</h2>
                   <p className="text-sm text-base-content/80 mb-4">
-                    Enter your email to continue as a guest. We&apos;ll use it to send your order confirmation.
+                    Enter your email to continue as a guest. We&apos;ll use it
+                    to send your order confirmation.
                   </p>
-                  <div>
-                    <label className="label" htmlFor="email">Email</label>
-                    <input
-                      id="email"
-                      type="email"
-                      className="input input-bordered w-full"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      required
-                    />
+                  <div className="space-y-3">
+                    <div>
+                      <label className="label" htmlFor="email">
+                        Email
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="email"
+                          type="email"
+                          className={`input input-bordered w-full ${emailExists ? "input-error" : ""}`}
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          required
+                        />
+                        {emailCheckLoading && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 loading loading-spinner loading-sm text-base-content/40" />
+                        )}
+                      </div>
+                    </div>
+                    {emailExists && (
+                      <div className="alert alert-warning py-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium">An account already exists with this email.</p>
+                          <p className="text-sm">Please sign in to complete your order and earn rewards.</p>
+                        </div>
+                        <Link
+                          href={`/auth/login?redirect=/checkout`}
+                          className="btn btn-sm btn-warning">
+                          Sign in
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </section>
               </>
@@ -469,7 +680,9 @@ export default function CheckoutPage() {
             )}
           </form>
           <p className="mt-4">
-            <Link href="/cart" className="link">Back to cart</Link>
+            <Link href="/cart" className="link">
+              Back to cart
+            </Link>
           </p>
         </div>
 
@@ -478,7 +691,9 @@ export default function CheckoutPage() {
           <div className="bg-base-200 rounded-lg p-4">
             <h2 className="font-semibold text-lg mb-4">Order summary</h2>
             {items.length === 0 ? (
-              <p className="text-sm text-base-content/60">Your cart is empty.</p>
+              <p className="text-sm text-base-content/60">
+                Your cart is empty.
+              </p>
             ) : (
               <ul className="space-y-3">
                 {items.map((item) => (
@@ -493,8 +708,12 @@ export default function CheckoutPage() {
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      <p className="text-xs text-base-content/60">Qty: {item.quantity}</p>
+                      <p className="text-sm font-medium truncate">
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-base-content/60">
+                        Qty: {item.quantity}
+                      </p>
                     </div>
                     <span className="text-sm font-medium whitespace-nowrap">
                       ${((item.price * item.quantity) / 100).toFixed(2)}
@@ -519,11 +738,11 @@ export default function CheckoutPage() {
                         amountCents: Math.round(parseFloat(r.amount) * 100),
                       });
                     }
-                  }}
-                >
+                  }}>
                   {shippingRates.map((r) => (
                     <option key={r.objectId} value={r.objectId}>
-                      {r.servicelevel?.name ?? r.provider} – ${parseFloat(r.amount).toFixed(2)}
+                      {r.servicelevel?.name ?? r.provider} – $
+                      {parseFloat(r.amount).toFixed(2)}
                       {r.durationTerms ? ` (${r.durationTerms})` : ""}
                     </option>
                   ))}
@@ -531,13 +750,17 @@ export default function CheckoutPage() {
               </div>
             )}
             {shippingLoading && effectiveShippingAddress.line1 && (
-              <p className="text-sm text-base-content/60 mb-2">Loading shipping rates…</p>
+              <p className="text-sm text-base-content/60 mb-2">
+                Loading shipping rates…
+              </p>
             )}
             {!shippingLoading &&
               effectiveShippingAddress.line1 &&
               effectiveShippingAddress.postalCode &&
               shippingRates.length === 0 && (
-                <p className="text-sm text-warning/80 mb-2">No shipping rates available. Check your address or contact us.</p>
+                <p className="text-sm text-warning/80 mb-2">
+                  No shipping rates available. Check your address or contact us.
+                </p>
               )}
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -547,7 +770,31 @@ export default function CheckoutPage() {
               {shippingAmount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span>Shipping</span>
-                  <span>${(shippingAmount / 100).toFixed(2)}</span>
+                  <span>
+                    {freeShippingApplied ? (
+                      <>
+                        <span className="line-through text-base-content/40 mr-1">
+                          ${(shippingAmount / 100).toFixed(2)}
+                        </span>
+                        <span className="text-success font-medium">Free</span>
+                      </>
+                    ) : discountType === "shipping" &&
+                      discountAmountCents > 0 ? (
+                      <>
+                        <span className="line-through text-base-content/40 mr-1">
+                          ${(shippingAmount / 100).toFixed(2)}
+                        </span>
+                        ${(effectiveShippingAmount / 100).toFixed(2)}
+                      </>
+                    ) : (
+                      `$${(shippingAmount / 100).toFixed(2)}`
+                    )}
+                  </span>
+                </div>
+              )}
+              {freeShippingApplied && (
+                <div className="flex justify-between text-sm text-success">
+                  <span>🎉 Free shipping applied!</span>
                 </div>
               )}
               {effectiveShippingAddress.state?.toUpperCase().trim() === "FL" &&
@@ -558,12 +805,92 @@ export default function CheckoutPage() {
                     <span>${(taxAmount / 100).toFixed(2)}</span>
                   </div>
                 )}
+              {/* Discount code input */}
+              <div className="pt-2 border-t border-base-300">
+                {discountCode ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-success">
+                        Code: {discountCode}
+                      </span>
+                      {discountMessage && (
+                        <p className="text-xs text-success">
+                          {discountMessage}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
+                      onClick={handleRemoveDiscount}>
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        className="input input-bordered input-sm flex-1"
+                        placeholder="Discount code"
+                        value={discountCodeInput}
+                        onChange={(e) => setDiscountCodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleApplyDiscount();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        onClick={handleApplyDiscount}
+                        disabled={discountLoading || !discountCodeInput.trim()}>
+                        {discountLoading ? "..." : "Apply"}
+                      </button>
+                    </div>
+                    {discountError && (
+                      <p className="text-xs text-error">{discountError}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* Product discount line item */}
+              {discountCode &&
+                discountType === "product" &&
+                discountAmountCents > 0 && (
+                  <div className="flex justify-between text-sm text-success">
+                    <span>Discount ({discountCode})</span>
+                    <span>-${(discountAmountCents / 100).toFixed(2)}</span>
+                  </div>
+                )}
+              {/* Shipping discount line item */}
+              {discountCode &&
+                discountType === "shipping" &&
+                discountAmountCents > 0 &&
+                !freeShippingApplied && (
+                  <div className="flex justify-between text-sm text-success">
+                    <span>Shipping discount ({discountCode})</span>
+                    <span>-${(discountAmountCents / 100).toFixed(2)}</span>
+                  </div>
+                )}
+              {/* Free shipping threshold hint */}
+              {freeShippingThreshold > 0 &&
+                !freeShippingApplied &&
+                subtotal < freeShippingThreshold && (
+                  <div className="text-xs text-base-content/60 pt-1">
+                    Add ${((freeShippingThreshold - subtotal) / 100).toFixed(2)}{" "}
+                    more for free shipping!
+                  </div>
+                )}
               {user && (
                 <div className="flex flex-col gap-2 pt-2 border-t border-base-300">
                   {pointsBalance !== null && pointsBalance > 0 && (
                     <>
                       <p className="text-sm text-base-content/70">
-                        You have {pointsBalance.toLocaleString()} points available
+                        You have {pointsBalance.toLocaleString()} points
+                        available
                       </p>
                       <div className="flex items-center gap-2">
                         <input
@@ -575,32 +902,40 @@ export default function CheckoutPage() {
                           value={pointsToApply || ""}
                           onChange={(e) => {
                             const v = parseInt(e.target.value, 10);
-                            setPointsToApply(Number.isNaN(v) ? 0 : Math.min(maxRedeemable, Math.max(0, v)));
+                            setPointsToApply(
+                              Number.isNaN(v)
+                                ? 0
+                                : Math.min(maxRedeemable, Math.max(0, v)),
+                            );
                           }}
                           placeholder="0"
                         />
-                        <span className="text-sm text-base-content/60">points</span>
+                        <span className="text-sm text-base-content/60">
+                          points
+                        </span>
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          onClick={() => setPointsToApply(maxRedeemable)}
-                        >
+                          onClick={() => setPointsToApply(maxRedeemable)}>
                           Use max
                         </button>
                       </div>
                     </>
                   )}
-                  {pointsBalance !== null && pointsBalance > 0 && pointsToApply > 0 && (
-                    <div className="flex justify-between text-sm text-success">
-                      <span>Rewards discount</span>
-                      <span>-${(pointsDiscountCents / 100).toFixed(2)}</span>
-                    </div>
-                  )}
+                  {pointsBalance !== null &&
+                    pointsBalance > 0 &&
+                    pointsToApply > 0 && (
+                      <div className="flex justify-between text-sm text-success">
+                        <span>Rewards discount</span>
+                        <span>-${(pointsDiscountCents / 100).toFixed(2)}</span>
+                      </div>
+                    )}
                   {pointsEarned > 0 && (
                     <div className="card bg-base-100 shadow-sm">
                       <div className="card-body p-3 text-center">
                         <p className="text-sm text-base-content font-medium m-0">
-                          You&apos;ll earn {pointsEarned.toLocaleString()} points on this purchase
+                          You&apos;ll earn {pointsEarned.toLocaleString()}{" "}
+                          points on this purchase
                         </p>
                       </div>
                     </div>
@@ -609,9 +944,7 @@ export default function CheckoutPage() {
               )}
               <div className="flex justify-between font-semibold pt-2">
                 <span>Total</span>
-                <span>
-                  ${(orderTotal / 100).toFixed(2)}
-                </span>
+                <span>${(orderTotal / 100).toFixed(2)}</span>
               </div>
             </div>
             <button
@@ -623,9 +956,9 @@ export default function CheckoutPage() {
                 items.length === 0 ||
                 !!billingValidationError ||
                 (!shippingSameAsBilling && !!shippingValidationError) ||
-                (!user && !isValidEmail(email))
-              }
-            >
+                (!user && !isValidEmail(email)) ||
+                (!user && emailExists)
+              }>
               {loading ? "Processing…" : "Continue to payment"}
             </button>
           </div>

@@ -17,11 +17,20 @@ export interface IShippingAddress {
 
 export interface IOrder {
   _id: mongoose.Types.ObjectId;
+  orderNumber?: string;
   user?: mongoose.Types.ObjectId;
+  email?: string;
   cartSessionId?: string;
   lineItems: IOrderLineItem[];
   shippingAddress: IShippingAddress;
-  status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded";
+  paymentStatus?: "unpaid" | "paid" | "refunded";
   taxAmount?: number;
   shippingAmount?: number;
   stripePaymentIntentId?: string;
@@ -30,6 +39,9 @@ export interface IOrder {
   trackingNumber?: string;
   pointsApplied?: number;
   pointsDiscountCents?: number;
+  discountCode?: string;
+  discountAmountCents?: number;
+  discountType?: "product" | "shipping";
   ipAddress?: string;
   userAgent?: string;
   referer?: string;
@@ -48,7 +60,7 @@ const lineItemSchema = new Schema<IOrderLineItem>(
     quantity: { type: Number, required: true },
     price: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const shippingAddressSchema = new Schema<IShippingAddress>(
@@ -60,19 +72,33 @@ const shippingAddressSchema = new Schema<IShippingAddress>(
     postalCode: { type: String, required: true },
     country: { type: String, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const orderSchema = new Schema<IOrder>(
   {
+    orderNumber: { type: String, unique: true, sparse: true },
     user: { type: Schema.Types.ObjectId, ref: "User" },
+    email: { type: String },
     cartSessionId: { type: String },
     lineItems: [lineItemSchema],
     shippingAddress: { type: shippingAddressSchema, required: true },
     status: {
       type: String,
-      enum: ["pending", "paid", "shipped", "delivered", "cancelled"],
+      enum: [
+        "pending",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "refunded",
+      ],
       default: "pending",
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "paid", "refunded"],
+      default: "unpaid",
     },
     taxAmount: { type: Number },
     shippingAmount: { type: Number },
@@ -82,6 +108,9 @@ const orderSchema = new Schema<IOrder>(
     trackingNumber: { type: String },
     pointsApplied: { type: Number },
     pointsDiscountCents: { type: Number },
+    discountCode: { type: String },
+    discountAmountCents: { type: Number },
+    discountType: { type: String, enum: ["product", "shipping"] },
     ipAddress: { type: String },
     userAgent: { type: String },
     referer: { type: String },
@@ -91,11 +120,16 @@ const orderSchema = new Schema<IOrder>(
     geoRegion: { type: String },
     geoCity: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 orderSchema.index({ user: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ cartSessionId: 1, status: 1 });
+orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ email: 1 });
+orderSchema.index({ stripePaymentIntentId: 1 });
 
-export const Order = mongoose.models.Order ?? model<IOrder>("Order", orderSchema);
+export const Order =
+  mongoose.models.Order ?? model<IOrder>("Order", orderSchema);

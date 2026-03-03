@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import { slugify } from "@/lib/slugify";
 import { useProductStore } from "@/stores/product-store";
-import { revalidateCollections, revalidateProducts } from "@/app/actions/revalidate";
+import {
+  revalidateCollections,
+  revalidateProducts,
+} from "@/app/actions/revalidate";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import type { Category } from "@/lib/types";
 import type { Collection } from "@/lib/types";
@@ -52,15 +56,27 @@ export default function NewProductPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"details" | "seo" | "pricing" | "inventory" | "images" | "collections" | "attributes">("details");
+  const [activeTab, setActiveTab] = useState<
+    | "details"
+    | "seo"
+    | "pricing"
+    | "inventory"
+    | "images"
+    | "collections"
+    | "attributes"
+  >("details");
   const [newImageUrl, setNewImageUrl] = useState("");
   const [newAttributeKey, setNewAttributeKey] = useState("");
   const [newAttributeValue, setNewAttributeValue] = useState("");
 
   useEffect(() => {
     Promise.all([
-      api("/api/categories").then((r) => r.json()).then((d) => setCategories(d.categories ?? [])),
-      api("/api/collections").then((r) => r.json()).then((d) => setCollections(d.collections ?? [])),
+      api("/api/categories")
+        .then((r) => r.json())
+        .then((d) => setCategories(d.categories ?? [])),
+      api("/api/collections")
+        .then((r) => r.json())
+        .then((d) => setCollections(d.collections ?? [])),
     ]);
   }, []);
 
@@ -82,7 +98,11 @@ export default function NewProductPage() {
       setError("Please select a category.");
       return;
     }
-    if (!form.price || isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0) {
+    if (
+      !form.price ||
+      isNaN(parseFloat(form.price)) ||
+      parseFloat(form.price) <= 0
+    ) {
       setActiveTab("pricing");
       setError("A valid price is required.");
       return;
@@ -100,7 +120,9 @@ export default function NewProductPage() {
           metaTitle: form.metaTitle || null,
           metaDescription: form.metaDescription || null,
           price: Math.round(parseFloat(form.price) * 100),
-          compareAtPrice: form.compareAtPrice ? Math.round(parseFloat(form.compareAtPrice) * 100) : null,
+          compareAtPrice: form.compareAtPrice
+            ? Math.round(parseFloat(form.compareAtPrice) * 100)
+            : null,
           cost: form.cost ? Math.round(parseFloat(form.cost) * 100) : 0,
           category: form.category,
           quantity: parseInt(form.quantity, 10) || 0,
@@ -125,8 +147,8 @@ export default function NewProductPage() {
         revalidateCollections(),
       ]);
       router.push("/admin/products");
-    } catch (err: any) {
-      setError(err.message || "Failed to create product");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to create product");
     } finally {
       setLoading(false);
     }
@@ -148,7 +170,10 @@ export default function NewProductPage() {
       const newImages = [...f.images];
       const newIndex = direction === "up" ? index - 1 : index + 1;
       if (newIndex < 0 || newIndex >= newImages.length) return f;
-      [newImages[index], newImages[newIndex]] = [newImages[newIndex], newImages[index]];
+      [newImages[index], newImages[newIndex]] = [
+        newImages[newIndex],
+        newImages[index],
+      ];
       return { ...f, images: newImages };
     });
   }
@@ -166,7 +191,10 @@ export default function NewProductPage() {
     if (newAttributeKey.trim() && newAttributeValue.trim()) {
       setForm((f) => ({
         ...f,
-        attributes: { ...f.attributes, [newAttributeKey.trim()]: newAttributeValue.trim() },
+        attributes: {
+          ...f.attributes,
+          [newAttributeKey.trim()]: newAttributeValue.trim(),
+        },
       }));
       setNewAttributeKey("");
       setNewAttributeValue("");
@@ -188,7 +216,9 @@ export default function NewProductPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">New Product</h1>
-              <p className="mt-1 text-base-content/80">Create a new product for your store</p>
+              <p className="mt-1 text-base-content/80">
+                Create a new product for your store
+              </p>
             </div>
             <Link href="/admin/products" className="btn btn-ghost btn-sm">
               Back to Products
@@ -215,50 +245,43 @@ export default function NewProductPage() {
               <button
                 type="button"
                 className={`tab ${activeTab === "details" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("details")}
-              >
+                onClick={() => setActiveTab("details")}>
                 Details
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "images" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("images")}
-              >
+                onClick={() => setActiveTab("images")}>
                 Images
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "pricing" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("pricing")}
-              >
+                onClick={() => setActiveTab("pricing")}>
                 Pricing
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "inventory" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("inventory")}
-              >
+                onClick={() => setActiveTab("inventory")}>
                 Inventory
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "collections" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("collections")}
-              >
+                onClick={() => setActiveTab("collections")}>
                 Collections
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "attributes" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("attributes")}
-              >
+                onClick={() => setActiveTab("attributes")}>
                 Attributes
               </button>
               <button
                 type="button"
                 className={`tab ${activeTab === "seo" ? "tab-active" : ""}`}
-                onClick={() => setActiveTab("seo")}
-              >
+                onClick={() => setActiveTab("seo")}>
                 SEO
               </button>
             </div>
@@ -272,7 +295,9 @@ export default function NewProductPage() {
                 <input
                   className="input input-bordered w-full"
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
                 />
               </div>
               <div>
@@ -293,11 +318,15 @@ export default function NewProductPage() {
                 <input
                   className="input input-bordered w-full"
                   value={form.sku}
-                  onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, sku: e.target.value }))
+                  }
                   placeholder="Product SKU (optional)"
                 />
                 <label className="label">
-                  <span className="label-text-alt">Stock Keeping Unit identifier</span>
+                  <span className="label-text-alt">
+                    Stock Keeping Unit identifier
+                  </span>
                 </label>
               </div>
               <div>
@@ -306,7 +335,9 @@ export default function NewProductPage() {
                 </label>
                 <RichTextEditor
                   value={form.description}
-                  onChange={(html) => setForm((f) => ({ ...f, description: html }))}
+                  onChange={(html) =>
+                    setForm((f) => ({ ...f, description: html }))
+                  }
                   minHeight="10rem"
                 />
               </div>
@@ -316,7 +347,9 @@ export default function NewProductPage() {
                 </label>
                 <RichTextEditor
                   value={form.whyChoose}
-                  onChange={(html) => setForm((f) => ({ ...f, whyChoose: html }))}
+                  onChange={(html) =>
+                    setForm((f) => ({ ...f, whyChoose: html }))
+                  }
                   placeholder="Optional"
                   minHeight="6rem"
                 />
@@ -327,7 +360,9 @@ export default function NewProductPage() {
                 </label>
                 <RichTextEditor
                   value={form.keyFeatures}
-                  onChange={(html) => setForm((f) => ({ ...f, keyFeatures: html }))}
+                  onChange={(html) =>
+                    setForm((f) => ({ ...f, keyFeatures: html }))
+                  }
                   placeholder="Optional"
                   minHeight="6rem"
                 />
@@ -338,7 +373,9 @@ export default function NewProductPage() {
                 </label>
                 <RichTextEditor
                   value={form.colorVariation}
-                  onChange={(html) => setForm((f) => ({ ...f, colorVariation: html }))}
+                  onChange={(html) =>
+                    setForm((f) => ({ ...f, colorVariation: html }))
+                  }
                   placeholder="Optional"
                   minHeight="6rem"
                 />
@@ -349,7 +386,9 @@ export default function NewProductPage() {
                 </label>
                 <RichTextEditor
                   value={form.growthHabit}
-                  onChange={(html) => setForm((f) => ({ ...f, growthHabit: html }))}
+                  onChange={(html) =>
+                    setForm((f) => ({ ...f, growthHabit: html }))
+                  }
                   placeholder="Optional"
                   minHeight="6rem"
                 />
@@ -360,18 +399,24 @@ export default function NewProductPage() {
                 </label>
                 <RichTextEditor
                   value={form.optimalCare}
-                  onChange={(html) => setForm((f) => ({ ...f, optimalCare: html }))}
+                  onChange={(html) =>
+                    setForm((f) => ({ ...f, optimalCare: html }))
+                  }
                   placeholder="Optional"
                   minHeight="6rem"
                 />
               </div>
               <div>
                 <label className="label">
-                  <span className="label-text">Ideal Compatibility with Other Corals</span>
+                  <span className="label-text">
+                    Ideal Compatibility with Other Corals
+                  </span>
                 </label>
                 <RichTextEditor
                   value={form.idealCompatibility}
-                  onChange={(html) => setForm((f) => ({ ...f, idealCompatibility: html }))}
+                  onChange={(html) =>
+                    setForm((f) => ({ ...f, idealCompatibility: html }))
+                  }
                   placeholder="Optional"
                   minHeight="6rem"
                 />
@@ -384,8 +429,9 @@ export default function NewProductPage() {
                 <select
                   className="select select-bordered w-full"
                   value={form.category}
-                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                >
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, category: e.target.value }))
+                  }>
                   <option value="">Select a category</option>
                   {categories.map((c) => (
                     <option key={c._id} value={c._id}>
@@ -402,7 +448,8 @@ export default function NewProductPage() {
                   <span className="label-text">Product Images</span>
                 </label>
                 <p className="text-sm text-base-content/70 mb-4">
-                  Add image URLs. The first image will be used as the primary product image.
+                  Add image URLs. The first image will be used as the primary
+                  product image.
                 </p>
                 <div className="flex gap-2 mb-4">
                   <input
@@ -418,16 +465,28 @@ export default function NewProductPage() {
                       }
                     }}
                   />
-                  <button type="button" className="btn btn-primary" onClick={addImage}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={addImage}>
                     Add Image
                   </button>
                 </div>
                 {form.images.length > 0 && (
                   <div className="space-y-2">
                     {form.images.map((url, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
                         <div className="flex-1 flex items-center gap-2">
-                          <img src={url} alt={`Product ${index + 1}`} className="w-16 h-16 object-cover rounded" />
+                          <Image
+                            src={url}
+                            alt={`Product ${index + 1}`}
+                            width={64}
+                            height={64}
+                            className="w-16 h-16 object-cover rounded"
+                            unoptimized
+                          />
                           <span className="text-sm truncate flex-1">{url}</span>
                         </div>
                         <div className="flex gap-1">
@@ -435,23 +494,20 @@ export default function NewProductPage() {
                             type="button"
                             className="btn btn-ghost btn-xs"
                             onClick={() => moveImage(index, "up")}
-                            disabled={index === 0}
-                          >
+                            disabled={index === 0}>
                             ↑
                           </button>
                           <button
                             type="button"
                             className="btn btn-ghost btn-xs"
                             onClick={() => moveImage(index, "down")}
-                            disabled={index === form.images.length - 1}
-                          >
+                            disabled={index === form.images.length - 1}>
                             ↓
                           </button>
                           <button
                             type="button"
                             className="btn btn-error btn-xs"
-                            onClick={() => removeImage(index)}
-                          >
+                            onClick={() => removeImage(index)}>
                             Remove
                           </button>
                         </div>
@@ -460,7 +516,9 @@ export default function NewProductPage() {
                   </div>
                 )}
                 {form.images.length === 0 && (
-                  <p className="text-sm text-base-content/60 italic">No images added yet.</p>
+                  <p className="text-sm text-base-content/60 italic">
+                    No images added yet.
+                  </p>
                 )}
               </div>
             </div>
@@ -476,7 +534,9 @@ export default function NewProductPage() {
                   step="0.01"
                   className="input input-bordered w-full"
                   value={form.price}
-                  onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, price: e.target.value }))
+                  }
                 />
               </div>
               <div>
@@ -489,10 +549,14 @@ export default function NewProductPage() {
                   className="input input-bordered w-full"
                   placeholder="Original price shown as strikethrough"
                   value={form.compareAtPrice}
-                  onChange={(e) => setForm((f) => ({ ...f, compareAtPrice: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, compareAtPrice: e.target.value }))
+                  }
                 />
                 <label className="label">
-                  <span className="label-text-alt">Optional: Shows original price when on sale</span>
+                  <span className="label-text-alt">
+                    Optional: Shows original price when on sale
+                  </span>
                 </label>
               </div>
               <div>
@@ -504,10 +568,14 @@ export default function NewProductPage() {
                   step="0.01"
                   className="input input-bordered w-full"
                   value={form.cost}
-                  onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, cost: e.target.value }))
+                  }
                 />
                 <label className="label">
-                  <span className="label-text-alt">Internal cost for profit calculation</span>
+                  <span className="label-text-alt">
+                    Internal cost for profit calculation
+                  </span>
                 </label>
               </div>
             </div>
@@ -521,12 +589,15 @@ export default function NewProductPage() {
                   type="number"
                   className="input input-bordered w-full"
                   value={form.quantity}
-                  onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, quantity: e.target.value }))
+                  }
                 />
               </div>
             </div>
 
-            <div className={activeTab !== "collections" ? "hidden" : "space-y-4"}>
+            <div
+              className={activeTab !== "collections" ? "hidden" : "space-y-4"}>
               <div>
                 <label className="label">
                   <span className="label-text">Collections</span>
@@ -537,14 +608,18 @@ export default function NewProductPage() {
                 {collections.length === 0 ? (
                   <p className="text-sm text-base-content/60 italic mb-4">
                     No collections available.{" "}
-                    <Link href="/admin/collections/new" className="link link-primary">
+                    <Link
+                      href="/admin/collections/new"
+                      className="link link-primary">
                       Create one
                     </Link>
                   </p>
                 ) : (
                   <div className="space-y-2">
                     {collections.map((collection) => (
-                      <label key={collection._id} className="flex items-center gap-2 cursor-pointer">
+                      <label
+                        key={collection._id}
+                        className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           className="checkbox"
@@ -559,7 +634,8 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            <div className={activeTab !== "attributes" ? "hidden" : "space-y-4"}>
+            <div
+              className={activeTab !== "attributes" ? "hidden" : "space-y-4"}>
               <div>
                 <label className="label">
                   <span className="label-text">Custom Attributes</span>
@@ -588,21 +664,25 @@ export default function NewProductPage() {
                       }
                     }}
                   />
-                  <button type="button" className="btn btn-primary" onClick={addAttribute}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={addAttribute}>
                     Add
                   </button>
                 </div>
                 {Object.keys(form.attributes).length > 0 && (
                   <div className="space-y-2">
                     {Object.entries(form.attributes).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
+                      <div
+                        key={key}
+                        className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
                         <span className="font-medium flex-1">{key}:</span>
                         <span className="flex-1">{value}</span>
                         <button
                           type="button"
                           className="btn btn-error btn-xs"
-                          onClick={() => removeAttribute(key)}
-                        >
+                          onClick={() => removeAttribute(key)}>
                           Remove
                         </button>
                       </div>
@@ -610,7 +690,9 @@ export default function NewProductPage() {
                   </div>
                 )}
                 {Object.keys(form.attributes).length === 0 && (
-                  <p className="text-sm text-base-content/60 italic">No attributes added yet.</p>
+                  <p className="text-sm text-base-content/60 italic">
+                    No attributes added yet.
+                  </p>
                 )}
               </div>
             </div>
@@ -623,11 +705,15 @@ export default function NewProductPage() {
                 <input
                   className="input input-bordered w-full"
                   value={form.metaTitle}
-                  onChange={(e) => setForm((f) => ({ ...f, metaTitle: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, metaTitle: e.target.value }))
+                  }
                   placeholder="Defaults to product name"
                 />
                 <label className="label">
-                  <span className="label-text-alt">Leave empty to use product name</span>
+                  <span className="label-text-alt">
+                    Leave empty to use product name
+                  </span>
                 </label>
               </div>
               <div>
@@ -637,18 +723,25 @@ export default function NewProductPage() {
                 <textarea
                   className="textarea textarea-bordered w-full"
                   value={form.metaDescription}
-                  onChange={(e) => setForm((f) => ({ ...f, metaDescription: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, metaDescription: e.target.value }))
+                  }
                   placeholder="Defaults to product description"
                   rows={3}
                 />
                 <label className="label">
-                  <span className="label-text-alt">Leave empty to use product description</span>
+                  <span className="label-text-alt">
+                    Leave empty to use product description
+                  </span>
                 </label>
               </div>
             </div>
 
             <div className="flex gap-2 pt-4 border-t">
-              <button type="submit" className="btn btn-primary" disabled={loading}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loading}>
                 {loading ? (
                   <>
                     <span className="loading loading-spinner loading-sm" />

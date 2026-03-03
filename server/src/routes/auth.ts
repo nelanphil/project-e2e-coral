@@ -1,7 +1,11 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { requireAuth, updateUserVisit, type AuthRequest } from "../middleware/auth.js";
+import {
+  requireAuth,
+  updateUserVisit,
+  type AuthRequest,
+} from "../middleware/auth.js";
 import type { IUser } from "../models/User.js";
 import { User } from "../models/User.js";
 import type { Request } from "express";
@@ -26,7 +30,11 @@ function getUserAgent(req: Request): string | undefined {
 }
 
 authRouter.post("/sign-up", async (req, res) => {
-  const { email, password, name } = req.body as { email?: string; password?: string; name?: string };
+  const { email, password, name } = req.body as {
+    email?: string;
+    password?: string;
+    name?: string;
+  };
   if (!email?.trim() || !password) {
     res.status(400).json({ error: "Email and password required" });
     return;
@@ -39,21 +47,39 @@ authRouter.post("/sign-up", async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const ipAddress = getIpAddress(req);
   const userAgent = getUserAgent(req);
-  const user = await User.create({
-    email: email.trim().toLowerCase(),
-    passwordHash,
-    name: (name ?? "").trim(),
-    role: "customer",
-    ipAddress,
-    userAgent,
-    visitCount: 1,
-    lastVisit: new Date(),
-  });
-  const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET);
-  res.status(201).json({
-    token,
-    user: { _id: user._id, email: user.email, name: user.name, role: user.role },
-  });
+  try {
+    const user = await User.create({
+      email: email.trim().toLowerCase(),
+      passwordHash,
+      name: (name ?? "").trim(),
+      role: "customer",
+      ipAddress,
+      userAgent,
+      visitCount: 1,
+      lastVisit: new Date(),
+    });
+    const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET);
+    res.status(201).json({
+      token,
+      user: {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (err: unknown) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: number }).code === 11000
+    ) {
+      res.status(400).json({ error: "Email already registered" });
+      return;
+    }
+    throw err;
+  }
 });
 
 authRouter.post("/login", async (req, res) => {
@@ -67,7 +93,10 @@ authRouter.post("/login", async (req, res) => {
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
-  if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+  if (
+    !user.passwordHash ||
+    !(await bcrypt.compare(password, user.passwordHash))
+  ) {
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
@@ -75,10 +104,17 @@ authRouter.post("/login", async (req, res) => {
   const userAgent = getUserAgent(req);
   await updateUserVisit(user._id.toString(), ipAddress, userAgent);
   const token = jwt.sign({ userId: user._id.toString() }, JWT_SECRET);
-  const updatedUser = await User.findById(user._id).select("-passwordHash").lean() as IUser | null;
+  const updatedUser = (await User.findById(user._id)
+    .select("-passwordHash")
+    .lean()) as IUser | null;
   res.json({
     token,
-    user: { _id: updatedUser!._id, email: updatedUser!.email, name: updatedUser!.name, role: updatedUser!.role },
+    user: {
+      _id: updatedUser!._id,
+      email: updatedUser!.email,
+      name: updatedUser!.name,
+      role: updatedUser!.role,
+    },
   });
 });
 
@@ -88,7 +124,9 @@ authRouter.get("/me", requireAuth, async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  const user = (await User.findById(userId).select("-passwordHash").lean()) as IUser | null;
+  const user = (await User.findById(userId)
+    .select("-passwordHash")
+    .lean()) as IUser | null;
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
@@ -122,17 +160,33 @@ authRouter.get("/me", requireAuth, async (req, res) => {
   }
 });
 
+authRouter.post("/check-email", async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (!email?.trim()) {
+    res.status(400).json({ error: "Email required" });
+    return;
+  }
+  const user = await User.findOne({
+    email: email.trim().toLowerCase(),
+    role: { $ne: "guest" },
+  }).select("_id").lean();
+  res.json({ exists: !!user });
+});
+
 authRouter.post("/guest", async (req, res) => {
-  const { cookieId, referrer } = req.body as { cookieId?: string; referrer?: string };
+  const { cookieId, referrer } = req.body as {
+    cookieId?: string;
+    referrer?: string;
+  };
   if (!cookieId?.trim()) {
     res.status(400).json({ error: "Cookie ID required" });
     return;
   }
   const ipAddress = getIpAddress(req);
   const userAgent = getUserAgent(req);
-  
+
   let user = await User.findOne({ cookieId: cookieId.trim(), role: "guest" });
-  
+
   if (user) {
     // Update existing guest user
     await User.findByIdAndUpdate(user._id, {
@@ -142,21 +196,42 @@ authRouter.post("/guest", async (req, res) => {
       userAgent,
       referrer: referrer || user.referrer,
     });
-    user = await User.findById(user._id).lean() as IUser;
+    user = (await User.findById(user._id).lean()) as IUser;
   } else {
     // Create new guest user
-    user = await User.create({
-      cookieId: cookieId.trim(),
-      role: "guest",
-      name: "",
-      ipAddress,
-      userAgent,
-      referrer,
-      visitCount: 1,
-      lastVisit: new Date(),
-    });
+    try {
+      user = await User.create({
+        cookieId: cookieId.trim(),
+        role: "guest",
+        name: "",
+        ipAddress,
+        userAgent,
+        referrer,
+        visitCount: 1,
+        lastVisit: new Date(),
+      });
+    } catch (err: unknown) {
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        (err as { code: number }).code === 11000
+      ) {
+        // Race condition: guest was created between findOne and create
+        user = (await User.findOne({
+          cookieId: cookieId.trim(),
+          role: "guest",
+        }).lean()) as IUser;
+        if (!user) {
+          res.status(500).json({ error: "Failed to create guest user" });
+          return;
+        }
+      } else {
+        throw err;
+      }
+    }
   }
-  
+
   res.json({
     user: {
       _id: user._id,

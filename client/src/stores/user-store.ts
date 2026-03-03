@@ -4,7 +4,8 @@ import { create } from "zustand";
 import { getAuthToken, setAuthToken, clearAuthToken } from "@/lib/auth";
 import type { UserInfo } from "@/lib/types";
 
-const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const getApiUrl = () =>
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
 
 export interface UserState {
   user: UserInfo | null;
@@ -16,7 +17,7 @@ export interface UserState {
   fetchUser: () => Promise<void>;
 }
 
-export const useUserStore = create<UserState>((set, get) => ({
+export const useUserStore = create<UserState>((set) => ({
   user: null,
   loading: true,
 

@@ -14,6 +14,10 @@ import { handleStripeWebhook, webhooksRouter } from "./routes/webhooks.js";
 import { newsletterRouter } from "./routes/newsletter.js";
 import { uploadRouter } from "./routes/upload.js";
 import { rewardsRouter } from "./routes/rewards.js";
+import { pagesRouter } from "./routes/pages.js";
+import { contactRouter } from "./routes/contact.js";
+import { discountsRouter } from "./routes/discounts.js";
+import { tickerRouter } from "./routes/ticker.js";
 
 const app = express();
 
@@ -39,6 +43,10 @@ app.use("/api/webhooks", webhooksRouter);
 app.use("/api/newsletter", newsletterRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/rewards", rewardsRouter);
+app.use("/api/discounts", discountsRouter);
+app.use("/api/pages", pagesRouter);
+app.use("/api/contact", contactRouter);
+app.use("/api/ticker-items", tickerRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

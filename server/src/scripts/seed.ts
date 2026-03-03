@@ -4,6 +4,8 @@ import { Category } from "../models/Category.js";
 import { Product } from "../models/Product.js";
 import { Inventory } from "../models/Inventory.js";
 import { User } from "../models/User.js";
+import { StaticPage } from "../models/StaticPage.js";
+import { getDefaultSections, getDefaultSlugs } from "../data/staticPageDefaults.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 
@@ -39,6 +41,36 @@ async function seed() {
     throw error;
   }
 
+  // Seed static pages (Customer Service, Shipping & Returns, Privacy Policy, Terms of Service)
+  try {
+    const slugs = getDefaultSlugs();
+    let pagesSeeded = 0;
+    for (const slug of slugs) {
+      const page = await StaticPage.findOne({ slug }).lean();
+      const sections = page?.sections ?? [];
+      if (sections.length === 0) {
+        const defaultSections = getDefaultSections(slug);
+        if (defaultSections?.length) {
+          await StaticPage.findOneAndUpdate(
+            { slug },
+            { $set: { sections: defaultSections } },
+            { upsert: true }
+          );
+          pagesSeeded++;
+          console.log("✅ Static page seeded:", slug);
+        }
+      }
+    }
+    if (pagesSeeded > 0) {
+      console.log(`✅ ${pagesSeeded} static page(s) seeded.`);
+    } else {
+      console.log("✅ Static pages already present.");
+    }
+  } catch (error) {
+    console.error("Error seeding static pages:", error);
+    throw error;
+  }
+
   // Note: Products and inventory are not seeded - they should be created through the admin interface
   // Categories can be optionally seeded if needed
   // await Category.deleteMany({});
@@ -48,7 +80,7 @@ async function seed() {
   //   { name: "SPS", slug: "sps" },
   // ]);
 
-  console.log("Seed complete: admin user created.");
+  console.log("Seed complete: admin user and static pages ready.");
   
   // Close database connection
   await mongoose.connection.close();

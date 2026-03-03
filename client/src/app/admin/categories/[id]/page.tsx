@@ -29,10 +29,6 @@ export default function EditCategoryPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setForm((f) => ({ ...f, slug: slugify(f.name) }));
-  }, [form.name]);
-
-  useEffect(() => {
     if (!id) return;
     api(`/api/categories/id/${id}`)
       .then((r) => r.json())
@@ -71,7 +67,13 @@ export default function EditCategoryPage() {
               <input
                 className="input input-bordered w-full"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    name: e.target.value,
+                    slug: slugify(e.target.value),
+                  }))
+                }
                 required
               />
             </div>
@@ -84,7 +86,10 @@ export default function EditCategoryPage() {
               />
             </div>
             <div className="flex gap-2">
-              <button type="submit" className="btn btn-primary" disabled={loading}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loading}>
                 {loading ? "Saving…" : "Save"}
               </button>
               <Link href="/admin/categories" className="btn btn-ghost">

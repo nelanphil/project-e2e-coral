@@ -17,20 +17,33 @@ const api = (path: string, options?: RequestInit) => {
 };
 
 export default function AdminShippingPage() {
-  const [shippingAmountFlorida, setShippingAmountFlorida] = useState<string>("");
+  const [shippingAmountFlorida, setShippingAmountFlorida] =
+    useState<string>("");
   const [shippingAmountOther, setShippingAmountOther] = useState<string>("");
+  const [freeShippingThreshold, setFreeShippingThreshold] =
+    useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     api("/api/admin/shipping")
       .then((r) => r.json())
       .then((d) => {
-        setShippingAmountFlorida(((d.shippingAmountFlorida ?? 0) / 100).toFixed(2));
+        setShippingAmountFlorida(
+          ((d.shippingAmountFlorida ?? 0) / 100).toFixed(2),
+        );
         setShippingAmountOther(((d.shippingAmountOther ?? 0) / 100).toFixed(2));
+        setFreeShippingThreshold(
+          ((d.freeShippingThresholdCents ?? 0) / 100).toFixed(2),
+        );
       })
-      .catch(() => setMessage({ type: "error", text: "Failed to load settings" }))
+      .catch(() =>
+        setMessage({ type: "error", text: "Failed to load settings" }),
+      )
       .finally(() => setLoading(false));
   }, []);
 
@@ -38,9 +51,14 @@ export default function AdminShippingPage() {
     e.preventDefault();
     setMessage(null);
     setSaving(true);
-    const floridaCents = Math.round(parseFloat(shippingAmountFlorida || "0") * 100);
+    const floridaCents = Math.round(
+      parseFloat(shippingAmountFlorida || "0") * 100,
+    );
     const otherCents = Math.round(parseFloat(shippingAmountOther || "0") * 100);
-    if (floridaCents < 0 || otherCents < 0) {
+    const thresholdCents = Math.round(
+      parseFloat(freeShippingThreshold || "0") * 100,
+    );
+    if (floridaCents < 0 || otherCents < 0 || thresholdCents < 0) {
       setMessage({ type: "error", text: "Amounts must be 0 or greater." });
       setSaving(false);
       return;
@@ -51,6 +69,7 @@ export default function AdminShippingPage() {
         body: JSON.stringify({
           shippingAmountFlorida: floridaCents,
           shippingAmountOther: otherCents,
+          freeShippingThresholdCents: thresholdCents,
         }),
       });
       if (!res.ok) {
@@ -82,7 +101,8 @@ export default function AdminShippingPage() {
         <div className="card-body">
           <h1 className="text-2xl font-bold">Shipping</h1>
           <p className="text-base-content/80">
-            Set flat shipping rates by destination. When configured, these rates are used at checkout instead of live carrier rates.
+            Set flat shipping rates by destination. When configured, these rates
+            are used at checkout instead of live carrier rates.
           </p>
         </div>
       </div>
@@ -92,15 +112,16 @@ export default function AdminShippingPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {message && (
               <div
-                className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}
-              >
+                className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}>
                 <span>{message.text}</span>
               </div>
             )}
 
             <div className="form-control">
               <label className="label" htmlFor="shipping-florida">
-                <span className="label-text font-medium">Shipping for Florida</span>
+                <span className="label-text font-medium">
+                  Shipping for Florida
+                </span>
                 <span className="label-text-alt">Amount in USD</span>
               </label>
               <input
@@ -122,7 +143,9 @@ export default function AdminShippingPage() {
 
             <div className="form-control">
               <label className="label" htmlFor="shipping-other">
-                <span className="label-text font-medium">Shipping for other states</span>
+                <span className="label-text font-medium">
+                  Shipping for other states
+                </span>
                 <span className="label-text-alt">Amount in USD</span>
               </label>
               <input
@@ -142,8 +165,36 @@ export default function AdminShippingPage() {
               </label>
             </div>
 
+            <div className="divider">Free Shipping Threshold</div>
+
+            <div className="form-control">
+              <label className="label" htmlFor="free-shipping-threshold">
+                <span className="label-text font-medium">
+                  Free shipping on orders over
+                </span>
+                <span className="label-text-alt">Amount in USD</span>
+              </label>
+              <input
+                id="free-shipping-threshold"
+                type="number"
+                min="0"
+                step="0.01"
+                className="input input-bordered w-full max-w-xs"
+                value={freeShippingThreshold}
+                onChange={(e) => setFreeShippingThreshold(e.target.value)}
+                placeholder="0.00"
+              />
+              <label className="label">
+                <span className="label-text-alt text-base-content/60">
+                  Orders with a subtotal at or above this amount receive free
+                  shipping. Set to $0.00 to disable.
+                </span>
+              </label>
+            </div>
+
             <p className="text-sm text-base-content/60">
-              Leave both at $0.00 to use live carrier rates (Shippo) when configured.
+              Leave both at $0.00 to use live carrier rates (Shippo) when
+              configured.
             </p>
 
             <button type="submit" className="btn btn-primary" disabled={saving}>

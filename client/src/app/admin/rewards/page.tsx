@@ -41,7 +41,7 @@ interface RewardLogEntry {
 }
 
 export default function AdminRewardsPage() {
-  const [settings, setSettings] = useState<RewardsSettings>({
+  const [, setSettings] = useState<RewardsSettings>({
     pointsPerDollar: 10,
     pointsToCents: 100,
   });
@@ -213,8 +213,7 @@ export default function AdminRewardsPage() {
 
       {message && (
         <div
-          className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}
-        >
+          className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}>
           <span>{message.text}</span>
         </div>
       )}
@@ -258,10 +257,10 @@ export default function AdminRewardsPage() {
                   min="1"
                   step="1"
                   className="input input-bordered w-24"
-                value={pointsToCentsInput}
-                onChange={(e) => setPointsToCentsInput(e.target.value)}
-                placeholder="100"
-              />
+                  value={pointsToCentsInput}
+                  onChange={(e) => setPointsToCentsInput(e.target.value)}
+                  placeholder="100"
+                />
                 <span className="text-sm text-base-content/60">
                   e.g. 100 = 100 points redeem for $1 off.
                 </span>
@@ -322,8 +321,7 @@ export default function AdminRewardsPage() {
             <button
               type="submit"
               className="btn btn-secondary"
-              disabled={adjusting}
-            >
+              disabled={adjusting}>
               {adjusting ? "Applying…" : "Apply adjustment"}
             </button>
           </form>
@@ -337,16 +335,14 @@ export default function AdminRewardsPage() {
               type="button"
               role="tab"
               className={`tab ${listTab === "users" ? "tab-active" : ""}`}
-              onClick={() => setListTab("users")}
-            >
+              onClick={() => setListTab("users")}>
               Users
             </button>
             <button
               type="button"
               role="tab"
               className={`tab ${listTab === "logs" ? "tab-active" : ""}`}
-              onClick={() => setListTab("logs")}
-            >
+              onClick={() => setListTab("logs")}>
               Reward Logs
             </button>
           </div>
@@ -420,14 +416,12 @@ export default function AdminRewardsPage() {
                                 : log.type === "spent"
                                   ? "badge-warning"
                                   : "badge-ghost"
-                            }`}
-                          >
+                            }`}>
                             {log.type}
                           </span>
                         </td>
                         <td
-                          className={`text-right font-medium ${log.points < 0 ? "text-error" : "text-success"}`}
-                        >
+                          className={`text-right font-medium ${log.points < 0 ? "text-error" : "text-success"}`}>
                           {log.points > 0 ? "+" : ""}
                           {log.points}
                         </td>
@@ -438,8 +432,7 @@ export default function AdminRewardsPage() {
                         </td>
                         <td
                           className="text-sm max-w-[200px] truncate"
-                          title={log.description}
-                        >
+                          title={log.description}>
                           {log.description ?? "—"}
                         </td>
                       </tr>
@@ -452,8 +445,7 @@ export default function AdminRewardsPage() {
                       type="button"
                       className="btn btn-sm btn-ghost"
                       disabled={logsPage <= 1}
-                      onClick={() => setLogsPage((p) => Math.max(1, p - 1))}
-                    >
+                      onClick={() => setLogsPage((p) => Math.max(1, p - 1))}>
                       Previous
                     </button>
                     <span className="flex items-center px-2 text-sm">
@@ -463,8 +455,7 @@ export default function AdminRewardsPage() {
                       type="button"
                       className="btn btn-sm btn-ghost"
                       disabled={logsPage >= Math.ceil(logsTotal / 20)}
-                      onClick={() => setLogsPage((p) => p + 1)}
-                    >
+                      onClick={() => setLogsPage((p) => p + 1)}>
                       Next
                     </button>
                   </div>

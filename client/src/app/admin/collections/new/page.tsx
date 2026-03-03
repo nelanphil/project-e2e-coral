@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { revalidateCollections } from "@/app/actions/revalidate";
@@ -32,10 +32,6 @@ export default function NewCollectionPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setForm((f) => ({ ...f, slug: slugify(f.name) }));
-  }, [form.name]);
 
   function handleAddTag() {
     const trimmed = tagInput.trim();
@@ -93,7 +89,11 @@ export default function NewCollectionPage() {
                 className="input input-bordered w-full"
                 value={form.name}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
+                  setForm((f) => ({
+                    ...f,
+                    name: e.target.value,
+                    slug: slugify(e.target.value),
+                  }))
                 }
                 required
               />
@@ -124,7 +124,10 @@ export default function NewCollectionPage() {
                 className="textarea textarea-bordered w-full"
                 value={form.carouselDescription}
                 onChange={(e) =>
-                  setForm((f) => ({ ...f, carouselDescription: e.target.value }))
+                  setForm((f) => ({
+                    ...f,
+                    carouselDescription: e.target.value,
+                  }))
                 }
                 placeholder="Short text shown on the home page collections carousel"
                 rows={2}
@@ -158,8 +161,7 @@ export default function NewCollectionPage() {
                   type="button"
                   className="btn btn-outline"
                   onClick={handleAddTag}
-                  disabled={!tagInput.trim()}
-                >
+                  disabled={!tagInput.trim()}>
                   Add
                 </button>
               </div>
@@ -171,8 +173,7 @@ export default function NewCollectionPage() {
                       <button
                         type="button"
                         className="hover:text-error"
-                        onClick={() => handleRemoveTag(tag)}
-                      >
+                        onClick={() => handleRemoveTag(tag)}>
                         ×
                       </button>
                     </span>
@@ -185,8 +186,7 @@ export default function NewCollectionPage() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={loading}
-              >
+                disabled={loading}>
                 {loading ? "Saving…" : "Save"}
               </button>
               <Link href="/admin/collections" className="btn btn-ghost">

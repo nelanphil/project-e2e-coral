@@ -1,9 +1,12 @@
 import { Router, type Request, type Response } from "express";
 import Stripe from "stripe";
 import { Order } from "../models/Order.js";
+import type { IOrder } from "../models/Order.js";
 import { User } from "../models/User.js";
 import { RewardsSettings } from "../models/RewardsSettings.js";
 import { RewardLog } from "../models/RewardLog.js";
+import { Discount } from "../models/Discount.js";
+import { processRefundReversals } from "../lib/order-refund.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -11,6 +14,10 @@ const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 
 export async function handleStripeWebhook(req: Request, res: Response) {
   if (!stripe || !stripeWebhookSecret) {
+    console.warn(
+      "Stripe webhook received but STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET is not configured. " +
+        "Payment status will not be updated via webhooks.",
+    );
     res.sendStatus(200);
     return;
   }
@@ -28,17 +35,32 @@ export async function handleStripeWebhook(req: Request, res: Response) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, stripeWebhookSecret);
   } catch (err) {
-    res.status(400).send(`Webhook signature verification failed: ${(err as Error).message}`);
+    res
+      .status(400)
+      .send(`Webhook signature verification failed: ${(err as Error).message}`);
     return;
   }
-  if (event.type === "checkout.session.completed") {
+  if (
+    event.type === "checkout.session.completed" ||
+    event.type === "checkout.session.async_payment_succeeded"
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
+    if (session.payment_status !== "paid") {
+      // Payment not yet collected (e.g. delayed payment method); wait for async_payment_succeeded
+      res.sendStatus(200);
+      return;
+    }
     const orderId = session.metadata?.orderId;
     if (orderId) {
       const order = await Order.findById(orderId);
-      if (order && order.status === "pending") {
-        order.status = "paid";
-        if (session.payment_intent) order.stripePaymentIntentId = String(session.payment_intent);
+      if (
+        order &&
+        (order.status === "pending" || order.status === "processing")
+      ) {
+        order.status = "processing";
+        (order as any).paymentStatus = "paid";
+        if (session.payment_intent)
+          order.stripePaymentIntentId = String(session.payment_intent);
         await order.save();
 
         const userId = order.user?.toString();
@@ -46,7 +68,9 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         const pointsDiscountCents = order.pointsDiscountCents ?? 0;
 
         if (userId && pointsApplied > 0) {
-          await User.findByIdAndUpdate(userId, { $inc: { pointsBalance: -pointsApplied } });
+          await User.findByIdAndUpdate(userId, {
+            $inc: { pointsBalance: -pointsApplied },
+          });
           await RewardLog.create({
             user: userId,
             type: "spent",
@@ -56,14 +80,30 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           });
         }
 
-        const rewardsSettings = await RewardsSettings.findOne().lean() as { pointsPerDollar?: number } | null;
+        const rewardsSettings = (await RewardsSettings.findOne().lean()) as {
+          pointsPerDollar?: number;
+        } | null;
         const pointsPerDollar = rewardsSettings?.pointsPerDollar ?? 10;
         if (userId && pointsPerDollar > 0) {
-          const subtotal = order.lineItems.reduce((sum: number, li: { price: number; quantity: number }) => sum + li.price * li.quantity, 0);
-          const orderTotalCents = subtotal + (order.shippingAmount ?? 0) + (order.taxAmount ?? 0) - pointsDiscountCents;
-          const pointsEarned = Math.floor((orderTotalCents / 100) * pointsPerDollar);
+          const subtotal = order.lineItems.reduce(
+            (sum: number, li: { price: number; quantity: number }) =>
+              sum + li.price * li.quantity,
+            0,
+          );
+          const discountCents = order.discountAmountCents ?? 0;
+          const orderTotalCents =
+            subtotal +
+            (order.shippingAmount ?? 0) +
+            (order.taxAmount ?? 0) -
+            pointsDiscountCents -
+            discountCents;
+          const pointsEarned = Math.floor(
+            (orderTotalCents / 100) * pointsPerDollar,
+          );
           if (pointsEarned > 0) {
-            await User.findByIdAndUpdate(userId, { $inc: { pointsBalance: pointsEarned } });
+            await User.findByIdAndUpdate(userId, {
+              $inc: { pointsBalance: pointsEarned },
+            });
             await RewardLog.create({
               user: userId,
               type: "earned",
@@ -73,6 +113,43 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             });
           }
         }
+
+        // Track discount code usage
+        if (order.discountCode) {
+          const cookieId = order.cookieId;
+          await Discount.findOneAndUpdate(
+            { code: order.discountCode },
+            {
+              $inc: { usedCount: 1 },
+              $push: {
+                usageLog: {
+                  userId: userId || undefined,
+                  cookieId: cookieId || undefined,
+                  orderId: order._id,
+                  usedAt: new Date(),
+                },
+              },
+            },
+          );
+        }
+      }
+    }
+  } else if (event.type === "charge.refunded") {
+    const charge = event.data.object as Stripe.Charge;
+    const paymentIntentId =
+      typeof charge.payment_intent === "string"
+        ? charge.payment_intent
+        : charge.payment_intent?.id;
+    if (paymentIntentId) {
+      const order = (await Order.findOne({
+        stripePaymentIntentId: paymentIntentId,
+      })) as IOrder | null;
+      if (order && order.status !== "refunded") {
+        await Order.updateOne(
+          { _id: order._id },
+          { $set: { status: "refunded", paymentStatus: "refunded" } },
+        );
+        await processRefundReversals(order);
       }
     }
   }

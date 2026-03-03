@@ -33,7 +33,10 @@ function authHeaders(): Record<string, string> {
   return h;
 }
 
-async function updateProductField(productId: string, body: Record<string, unknown>) {
+async function updateProductField(
+  productId: string,
+  body: Record<string, unknown>,
+) {
   const res = await fetch(`${getApiUrl()}/api/products/${productId}`, {
     method: "PUT",
     headers: authHeaders(),
@@ -62,11 +65,14 @@ async function restoreProduct(productId: string) {
 }
 
 async function toggleVisibility(productId: string, isActive: boolean) {
-  const res = await fetch(`${getApiUrl()}/api/products/${productId}/visibility`, {
-    method: "PATCH",
-    headers: authHeaders(),
-    body: JSON.stringify({ isActive }),
-  });
+  const res = await fetch(
+    `${getApiUrl()}/api/products/${productId}/visibility`,
+    {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify({ isActive }),
+    },
+  );
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || "Failed to update visibility");
@@ -83,14 +89,19 @@ function EditablePriceCell({
   productId: string;
   field: "price" | "compareAtPrice";
   value: number | null | undefined;
-  onSaved: (productId: string, field: "price" | "compareAtPrice", newValue: number | null) => void;
+  onSaved: (
+    productId: string,
+    field: "price" | "compareAtPrice",
+    newValue: number | null,
+  ) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const displayValue = value && value > 0 ? `$${(value / 100).toFixed(2)}` : "—";
+  const displayValue =
+    value && value > 0 ? `$${(value / 100).toFixed(2)}` : "—";
 
   const startEditing = () => {
     setDraft(value && value > 0 ? (value / 100).toFixed(2) : "");
@@ -100,14 +111,22 @@ function EditablePriceCell({
 
   const save = async () => {
     const parsed = parseFloat(draft);
-    const cents = !draft.trim() || isNaN(parsed) ? (field === "price" ? null : 0) : Math.round(parsed * 100);
+    const cents =
+      !draft.trim() || isNaN(parsed)
+        ? field === "price"
+          ? null
+          : 0
+        : Math.round(parsed * 100);
 
     if (field === "price" && (cents === null || cents <= 0)) {
       setEditing(false);
       return;
     }
 
-    const newValue = field === "compareAtPrice" && (!draft.trim() || cents === 0) ? null : cents;
+    const newValue =
+      field === "compareAtPrice" && (!draft.trim() || cents === 0)
+        ? null
+        : cents;
 
     if (newValue === value) {
       setEditing(false);
@@ -157,8 +176,7 @@ function EditablePriceCell({
     <button
       type="button"
       className="text-left hover:underline cursor-pointer decoration-dotted underline-offset-2"
-      onClick={startEditing}
-    >
+      onClick={startEditing}>
       {displayValue}
     </button>
   );
@@ -178,7 +196,10 @@ function CollectionsDropdown({
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedIds));
-  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -242,37 +263,45 @@ function CollectionsDropdown({
     .filter((c) => selected.has(c._id))
     .map((c) => c.name);
 
-  const dropdownContent = open && position && typeof document !== "undefined" && (
-    <div
-      ref={dropdownRef}
-      className="fixed z-[9999] w-56 bg-base-100 border border-base-300 rounded-lg shadow-xl p-2 space-y-1 max-h-60 overflow-y-auto"
-      style={{ top: position.top, left: position.left }}
-    >
-      {allCollections.length === 0 && (
-        <div className="text-xs text-base-content/50 px-2 py-1">No collections available</div>
-      )}
-      {allCollections.map((c) => (
-        <label key={c._id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-base-200 cursor-pointer text-sm">
-          <input
-            type="checkbox"
-            className="checkbox checkbox-xs"
-            checked={selected.has(c._id)}
-            onChange={() => toggle(c._id)}
-          />
-          {c.name}
-        </label>
-      ))}
-      {hasChanges && (
-        <button
-          className="btn btn-primary btn-xs w-full mt-1"
-          onClick={save}
-          disabled={saving}
-        >
-          {saving ? <span className="loading loading-spinner loading-xs" /> : "Save"}
-        </button>
-      )}
-    </div>
-  );
+  const dropdownContent = open &&
+    position &&
+    typeof document !== "undefined" && (
+      <div
+        ref={dropdownRef}
+        className="fixed z-[9999] w-56 bg-base-100 border border-base-300 rounded-lg shadow-xl p-2 space-y-1 max-h-60 overflow-y-auto"
+        style={{ top: position.top, left: position.left }}>
+        {allCollections.length === 0 && (
+          <div className="text-xs text-base-content/50 px-2 py-1">
+            No collections available
+          </div>
+        )}
+        {allCollections.map((c) => (
+          <label
+            key={c._id}
+            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-base-200 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-xs"
+              checked={selected.has(c._id)}
+              onChange={() => toggle(c._id)}
+            />
+            {c.name}
+          </label>
+        ))}
+        {hasChanges && (
+          <button
+            className="btn btn-primary btn-xs w-full mt-1"
+            onClick={save}
+            disabled={saving}>
+            {saving ? (
+              <span className="loading loading-spinner loading-xs" />
+            ) : (
+              "Save"
+            )}
+          </button>
+        )}
+      </div>
+    );
 
   return (
     <div className="relative">
@@ -280,15 +309,20 @@ function CollectionsDropdown({
         ref={triggerRef}
         type="button"
         className="btn btn-ghost btn-xs text-left normal-case gap-1 max-w-[200px]"
-        onClick={() => setOpen(!open)}
-      >
+        onClick={() => setOpen(!open)}>
         <span className="truncate">
-          {displayNames.length === 0
-            ? "None"
-            : displayNames.join(", ")}
+          {displayNames.length === 0 ? "None" : displayNames.join(", ")}
         </span>
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-3 w-3 shrink-0"
+          viewBox="0 0 20 20"
+          fill="currentColor">
+          <path
+            fillRule="evenodd"
+            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+            clipRule="evenodd"
+          />
         </svg>
       </button>
       {dropdownContent && createPortal(dropdownContent, document.body)}
@@ -318,13 +352,27 @@ export default function AdminProductsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [viewStatus, setViewStatus] = useState<"active" | "inactive">("active");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [visibilityLoading, setVisibilityLoading] = useState<string | null>(null);
+  const [visibilityLoading, setVisibilityLoading] = useState<string | null>(
+    null,
+  );
   const [visibilityError, setVisibilityError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const modalRef = useRef<HTMLDialogElement>(null);
 
   const fetchWithSort = useCallback(
-    (overrides: { page?: number; q?: string; sort?: string; order?: "asc" | "desc"; status?: string; category?: string } = {}) => {
+    (
+      overrides: {
+        page?: number;
+        q?: string;
+        sort?: string;
+        order?: "asc" | "desc";
+        status?: string;
+        category?: string;
+      } = {},
+    ) => {
       return fetchProducts({
         page: overrides.page ?? 1,
         limit: pageSize,
@@ -356,7 +404,10 @@ export default function AdminProductsPage() {
     fetchCollections();
   }, [fetchCategories, fetchCollections]);
 
-  const handleCategoryChange = async (productId: string, categoryId: string) => {
+  const handleCategoryChange = async (
+    productId: string,
+    categoryId: string,
+  ) => {
     const prev = products.find((p) => p._id === productId);
     setSavingCategory(productId);
     updateProductInList(productId, { category: categoryId });
@@ -370,7 +421,11 @@ export default function AdminProductsPage() {
   };
 
   const handlePriceSaved = useCallback(
-    (productId: string, field: "price" | "compareAtPrice", newValue: number | null) => {
+    (
+      productId: string,
+      field: "price" | "compareAtPrice",
+      newValue: number | null,
+    ) => {
       updateProductInList(productId, { [field]: newValue } as Partial<Product>);
     },
     [updateProductInList],
@@ -397,34 +452,65 @@ export default function AdminProductsPage() {
   const handleSort = (field: string) => {
     const nextOrder =
       sortField === field
-        ? (sortOrder === "asc" ? "desc" as const : "asc" as const)
+        ? sortOrder === "asc"
+          ? ("desc" as const)
+          : ("asc" as const)
         : "asc";
     if (sortField !== field) setSortField(field);
     setSortOrder(nextOrder);
     fetchWithSort({ page: 1, sort: field, order: nextOrder });
   };
 
-  const SortableTh = ({ columnKey, label }: { columnKey: string; label: string }) => (
+  const SortableTh = ({
+    columnKey,
+    label,
+  }: {
+    columnKey: string;
+    label: string;
+  }) => (
     <th>
       <button
         type="button"
         className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer select-none"
-        onClick={() => handleSort(columnKey)}
-      >
+        onClick={() => handleSort(columnKey)}>
         {label}
         {sortField === columnKey ? (
           sortOrder === "asc" ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3.5 w-3.5"
+              viewBox="0 0 20 20"
+              fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z"
+                clipRule="evenodd"
+              />
             </svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3.5 w-3.5"
+              viewBox="0 0 20 20"
+              fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clipRule="evenodd"
+              />
             </svg>
           )
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 opacity-30" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clipRule="evenodd" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-3.5 w-3.5 opacity-30"
+            viewBox="0 0 20 20"
+            fill="currentColor">
+            <path
+              fillRule="evenodd"
+              d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z"
+              clipRule="evenodd"
+            />
           </svg>
         )}
       </button>
@@ -467,15 +553,20 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleVisibilityToggle = async (productId: string, currentlyActive: boolean) => {
+  const handleVisibilityToggle = async (
+    productId: string,
+    currentlyActive: boolean,
+  ) => {
     setVisibilityLoading(productId);
     setVisibilityError(null);
     updateProductInList(productId, { isActive: !currentlyActive });
     try {
       await toggleVisibility(productId, !currentlyActive);
-    } catch (err: any) {
+    } catch (err: unknown) {
       updateProductInList(productId, { isActive: currentlyActive });
-      setVisibilityError(err.message || "Failed to update visibility");
+      setVisibilityError(
+        err instanceof Error ? err.message : "Failed to update visibility",
+      );
     } finally {
       setVisibilityLoading(null);
     }
@@ -506,8 +597,7 @@ export default function AdminProductsPage() {
           <select
             className="select select-bordered select-sm"
             value={pageSize}
-            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-          >
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}>
             {PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>
                 {size}
@@ -520,9 +610,13 @@ export default function AdminProductsPage() {
           <div className="join">
             <button
               className="join-item btn btn-sm"
-              onClick={() => fetchWithSort({ page: Math.max(1, page - 1), q: debouncedSearchQuery.trim() || undefined })}
-              disabled={page === 1 || productsLoading}
-            >
+              onClick={() =>
+                fetchWithSort({
+                  page: Math.max(1, page - 1),
+                  q: debouncedSearchQuery.trim() || undefined,
+                })
+              }
+              disabled={page === 1 || productsLoading}>
               «
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -539,15 +633,21 @@ export default function AdminProductsPage() {
                 return (
                   <span key={p}>
                     {showEllipsis && (
-                      <button className="join-item btn btn-sm btn-disabled" disabled>
+                      <button
+                        className="join-item btn btn-sm btn-disabled"
+                        disabled>
                         ...
                       </button>
                     )}
                     <button
                       className={`join-item btn btn-sm ${page === p ? "btn-active" : ""}`}
-                      onClick={() => fetchWithSort({ page: p, q: debouncedSearchQuery.trim() || undefined })}
-                      disabled={productsLoading}
-                    >
+                      onClick={() =>
+                        fetchWithSort({
+                          page: p,
+                          q: debouncedSearchQuery.trim() || undefined,
+                        })
+                      }
+                      disabled={productsLoading}>
                       {p}
                     </button>
                   </span>
@@ -555,9 +655,13 @@ export default function AdminProductsPage() {
               })}
             <button
               className="join-item btn btn-sm"
-              onClick={() => fetchWithSort({ page: Math.min(totalPages, page + 1), q: debouncedSearchQuery.trim() || undefined })}
-              disabled={page === totalPages || productsLoading}
-            >
+              onClick={() =>
+                fetchWithSort({
+                  page: Math.min(totalPages, page + 1),
+                  q: debouncedSearchQuery.trim() || undefined,
+                })
+              }
+              disabled={page === totalPages || productsLoading}>
               »
             </button>
           </div>
@@ -592,15 +696,13 @@ export default function AdminProductsPage() {
             <button
               role="tab"
               className={`tab ${viewStatus === "active" ? "tab-active" : ""}`}
-              onClick={() => setViewStatus("active")}
-            >
+              onClick={() => setViewStatus("active")}>
               Active
             </button>
             <button
               role="tab"
               className={`tab ${viewStatus === "inactive" ? "tab-active" : ""}`}
-              onClick={() => setViewStatus("inactive")}
-            >
+              onClick={() => setViewStatus("inactive")}>
               Inactive
             </button>
           </div>
@@ -610,8 +712,7 @@ export default function AdminProductsPage() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 16 16"
                 fill="currentColor"
-                className="w-4 h-4 opacity-70"
-              >
+                className="w-4 h-4 opacity-70">
                 <path
                   fillRule="evenodd"
                   d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.755ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
@@ -629,11 +730,12 @@ export default function AdminProductsPage() {
             <select
               className="select select-bordered w-full sm:w-48"
               value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-            >
+              onChange={(e) => setFilterCategory(e.target.value)}>
               <option value="">All Categories</option>
               {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
               ))}
             </select>
           </div>
@@ -647,7 +749,11 @@ export default function AdminProductsPage() {
           {visibilityError && (
             <div className="alert alert-error text-sm mt-2">
               <span>{visibilityError}</span>
-              <button className="btn btn-ghost btn-xs" onClick={() => setVisibilityError(null)}>Dismiss</button>
+              <button
+                className="btn btn-ghost btn-xs"
+                onClick={() => setVisibilityError(null)}>
+                Dismiss
+              </button>
             </div>
           )}
           <div className="overflow-x-auto mt-4">
@@ -655,7 +761,11 @@ export default function AdminProductsPage() {
               <thead>
                 <tr>
                   {SORTABLE_COLUMNS.map((col) => (
-                    <SortableTh key={col.key} columnKey={col.key} label={col.label} />
+                    <SortableTh
+                      key={col.key}
+                      columnKey={col.key}
+                      label={col.label}
+                    />
                   ))}
                   <th />
                 </tr>
@@ -669,7 +779,9 @@ export default function AdminProductsPage() {
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center text-base-content/70 py-8">
+                    <td
+                      colSpan={8}
+                      className="text-center text-base-content/70 py-8">
                       {debouncedSearchQuery.trim()
                         ? `No products match "${debouncedSearchQuery}".`
                         : viewStatus === "inactive"
@@ -678,97 +790,122 @@ export default function AdminProductsPage() {
                     </td>
                   </tr>
                 ) : (
-                products.map((p) => {
-                  const isActive = p.isActive !== false;
-                  const zeroPriceHidden = !isActive && (!p.price || p.price <= 0);
-                  return (
-                  <tr key={p._id} className={viewStatus === "inactive" ? "opacity-60" : !isActive ? "opacity-70" : ""}>
-                    <td>{p.name}</td>
-                    <td>
-                      {viewStatus === "active" ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            className={`toggle toggle-sm ${isActive ? "toggle-success" : ""}`}
-                            checked={isActive}
-                            disabled={visibilityLoading === p._id}
-                            onChange={() => handleVisibilityToggle(p._id, isActive)}
-                          />
-                          {!isActive && (
-                            <span className="badge badge-warning badge-xs whitespace-nowrap">
-                              {zeroPriceHidden ? "No price" : "Hidden"}
+                  products.map((p) => {
+                    const isActive = p.isActive !== false;
+                    const zeroPriceHidden =
+                      !isActive && (!p.price || p.price <= 0);
+                    return (
+                      <tr
+                        key={p._id}
+                        className={
+                          viewStatus === "inactive"
+                            ? "opacity-60"
+                            : !isActive
+                              ? "opacity-70"
+                              : ""
+                        }>
+                        <td>{p.name}</td>
+                        <td>
+                          {viewStatus === "active" ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                className={`toggle toggle-sm ${isActive ? "toggle-success" : ""}`}
+                                checked={isActive}
+                                disabled={visibilityLoading === p._id}
+                                onChange={() =>
+                                  handleVisibilityToggle(p._id, isActive)
+                                }
+                              />
+                              {!isActive && (
+                                <span className="badge badge-warning badge-xs whitespace-nowrap">
+                                  {zeroPriceHidden ? "No price" : "Hidden"}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-base-content/50">
+                              N/A
                             </span>
                           )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-base-content/50">N/A</span>
-                      )}
-                    </td>
-                    <td>
-                      <select
-                        className="select select-bordered select-xs w-full max-w-[160px]"
-                        value={getCategoryId(p)}
-                        disabled={savingCategory === p._id || viewStatus === "inactive"}
-                        onChange={(e) => handleCategoryChange(p._id, e.target.value)}
-                      >
-                        {!getCategoryId(p) && <option value="">—</option>}
-                        {categories.map((cat) => (
-                          <option key={cat._id} value={cat._id}>{cat.name}</option>
-                        ))}
-                      </select>
-                      {savingCategory === p._id && (
-                        <span className="loading loading-spinner loading-xs ml-1" />
-                      )}
-                    </td>
-                    <td>
-                      <CollectionsDropdown
-                        productId={p._id}
-                        selectedIds={getCollectionIds(p)}
-                        allCollections={collections}
-                        onSaved={handleCollectionsSaved}
-                      />
-                    </td>
-                    <td>
-                      <EditablePriceCell
-                        productId={p._id}
-                        field="price"
-                        value={p.price}
-                        onSaved={handlePriceSaved}
-                      />
-                    </td>
-                    <td>
-                      <EditablePriceCell
-                        productId={p._id}
-                        field="compareAtPrice"
-                        value={p.compareAtPrice}
-                        onSaved={handlePriceSaved}
-                      />
-                    </td>
-                    <td>{p.inventory?.quantity ?? 0}</td>
-                    <td className="flex items-center gap-1">
-                      {viewStatus === "active" ? (
-                        <>
-                          <Link href={`/admin/products/${p._id}`} className="btn btn-ghost btn-xs">Edit</Link>
-                          <button
-                            className="btn btn-ghost btn-xs text-error"
-                            onClick={() => openDeleteModal(p)}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          className="btn btn-success btn-xs"
-                          onClick={() => handleRestore(p._id)}
-                          disabled={actionLoading === p._id}
-                        >
-                          {actionLoading === p._id ? <span className="loading loading-spinner loading-xs" /> : "Restore"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                  );
-                })
+                        </td>
+                        <td>
+                          <select
+                            className="select select-bordered select-xs w-full max-w-[160px]"
+                            value={getCategoryId(p)}
+                            disabled={
+                              savingCategory === p._id ||
+                              viewStatus === "inactive"
+                            }
+                            onChange={(e) =>
+                              handleCategoryChange(p._id, e.target.value)
+                            }>
+                            {!getCategoryId(p) && <option value="">—</option>}
+                            {categories.map((cat) => (
+                              <option key={cat._id} value={cat._id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                          {savingCategory === p._id && (
+                            <span className="loading loading-spinner loading-xs ml-1" />
+                          )}
+                        </td>
+                        <td>
+                          <CollectionsDropdown
+                            productId={p._id}
+                            selectedIds={getCollectionIds(p)}
+                            allCollections={collections}
+                            onSaved={handleCollectionsSaved}
+                          />
+                        </td>
+                        <td>
+                          <EditablePriceCell
+                            productId={p._id}
+                            field="price"
+                            value={p.price}
+                            onSaved={handlePriceSaved}
+                          />
+                        </td>
+                        <td>
+                          <EditablePriceCell
+                            productId={p._id}
+                            field="compareAtPrice"
+                            value={p.compareAtPrice}
+                            onSaved={handlePriceSaved}
+                          />
+                        </td>
+                        <td>{p.inventory?.quantity ?? 0}</td>
+                        <td className="flex items-center gap-1">
+                          {viewStatus === "active" ? (
+                            <>
+                              <Link
+                                href={`/admin/products/${p._id}`}
+                                className="btn btn-ghost btn-xs">
+                                Edit
+                              </Link>
+                              <button
+                                className="btn btn-ghost btn-xs text-error"
+                                onClick={() => openDeleteModal(p)}>
+                                Delete
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              className="btn btn-success btn-xs"
+                              onClick={() => handleRestore(p._id)}
+                              disabled={actionLoading === p._id}>
+                              {actionLoading === p._id ? (
+                                <span className="loading loading-spinner loading-xs" />
+                              ) : (
+                                "Restore"
+                              )}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -781,9 +918,14 @@ export default function AdminProductsPage() {
         <div className="modal-box">
           <h3 className="font-bold text-lg">Delete Product</h3>
           <p className="py-4">
-            Are you sure you want to delete <span className="font-semibold">{confirmDelete?.name}</span>?
-            This will mark it as <span className="badge badge-warning badge-sm align-middle">Inactive</span> and
-            remove it from the storefront. You can restore it later from the Inactive tab.
+            Are you sure you want to delete{" "}
+            <span className="font-semibold">{confirmDelete?.name}</span>? This
+            will mark it as{" "}
+            <span className="badge badge-warning badge-sm align-middle">
+              Inactive
+            </span>{" "}
+            and remove it from the storefront. You can restore it later from the
+            Inactive tab.
           </p>
           <div className="modal-action">
             <button className="btn btn-ghost" onClick={closeDeleteModal}>
@@ -792,11 +934,12 @@ export default function AdminProductsPage() {
             <button
               className="btn btn-error"
               onClick={handleDelete}
-              disabled={actionLoading === confirmDelete?.id}
-            >
-              {actionLoading === confirmDelete?.id
-                ? <span className="loading loading-spinner loading-sm" />
-                : "Yes, delete"}
+              disabled={actionLoading === confirmDelete?.id}>
+              {actionLoading === confirmDelete?.id ? (
+                <span className="loading loading-spinner loading-sm" />
+              ) : (
+                "Yes, delete"
+              )}
             </button>
           </div>
         </div>

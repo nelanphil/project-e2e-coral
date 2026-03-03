@@ -63,10 +63,6 @@ export default function EditCollectionPage() {
     });
   }, [id]);
 
-  useEffect(() => {
-    setForm((f) => ({ ...f, slug: slugify(f.name) }));
-  }, [form.name]);
-
   function handleAddTag() {
     const trimmed = tagInput.trim();
     if (trimmed && !tags.includes(trimmed)) {
@@ -167,15 +163,13 @@ export default function EditCollectionPage() {
             <button
               type="button"
               className={`tab ${activeTab === "details" ? "tab-active" : ""}`}
-              onClick={() => setActiveTab("details")}
-            >
+              onClick={() => setActiveTab("details")}>
               Details
             </button>
             <button
               type="button"
               className={`tab ${activeTab === "products" ? "tab-active" : ""}`}
-              onClick={() => setActiveTab("products")}
-            >
+              onClick={() => setActiveTab("products")}>
               Products ({collection.products?.length ?? 0})
             </button>
           </div>
@@ -188,7 +182,11 @@ export default function EditCollectionPage() {
                   className="input input-bordered w-full"
                   value={form.name}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, name: e.target.value }))
+                    setForm((f) => ({
+                      ...f,
+                      name: e.target.value,
+                      slug: slugify(e.target.value),
+                    }))
                   }
                   required
                 />
@@ -218,7 +216,10 @@ export default function EditCollectionPage() {
                   className="textarea textarea-bordered w-full"
                   value={form.carouselDescription}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, carouselDescription: e.target.value }))
+                    setForm((f) => ({
+                      ...f,
+                      carouselDescription: e.target.value,
+                    }))
                   }
                   placeholder="Short text shown on the home page collections carousel for this collection"
                   rows={2}
@@ -231,7 +232,10 @@ export default function EditCollectionPage() {
                     className="checkbox"
                     checked={form.showInCarousel}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, showInCarousel: e.target.checked }))
+                      setForm((f) => ({
+                        ...f,
+                        showInCarousel: e.target.checked,
+                      }))
                     }
                   />
                   <span className="label-text">Show on home page carousel</span>
@@ -252,8 +256,7 @@ export default function EditCollectionPage() {
                     type="button"
                     className="btn btn-outline"
                     onClick={handleAddTag}
-                    disabled={!tagInput.trim()}
-                  >
+                    disabled={!tagInput.trim()}>
                     Add
                   </button>
                 </div>
@@ -265,8 +268,7 @@ export default function EditCollectionPage() {
                         <button
                           type="button"
                           className="hover:text-error"
-                          onClick={() => handleRemoveTag(tag)}
-                        >
+                          onClick={() => handleRemoveTag(tag)}>
                           ×
                         </button>
                       </span>
@@ -279,8 +281,7 @@ export default function EditCollectionPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={loading}
-                >
+                  disabled={loading}>
                   {loading ? "Saving…" : "Save"}
                 </button>
                 <Link href="/admin/collections" className="btn btn-ghost">
@@ -306,8 +307,7 @@ export default function EditCollectionPage() {
                     {availableProducts.map((p) => (
                       <label
                         key={p._id}
-                        className="flex items-center gap-2 p-2 hover:bg-base-200 cursor-pointer"
-                      >
+                        className="flex items-center gap-2 p-2 hover:bg-base-200 cursor-pointer">
                         <input
                           type="checkbox"
                           className="checkbox"
@@ -338,8 +338,7 @@ export default function EditCollectionPage() {
                     type="button"
                     className="btn btn-primary btn-sm mt-2"
                     onClick={handleAddProducts}
-                    disabled={loading}
-                  >
+                    disabled={loading}>
                     Add {selectedProductIds.length} product
                     {selectedProductIds.length > 1 ? "s" : ""}
                   </button>
@@ -360,8 +359,7 @@ export default function EditCollectionPage() {
                     return (
                       <div
                         key={productId}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
+                        className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
                           <div className="font-medium">{product.name}</div>
                           <div className="text-sm text-base-content/60">
@@ -372,8 +370,7 @@ export default function EditCollectionPage() {
                           type="button"
                           className="btn btn-ghost btn-xs text-error"
                           onClick={() => handleRemoveProduct(productId)}
-                          disabled={loading}
-                        >
+                          disabled={loading}>
                           Remove
                         </button>
                       </div>

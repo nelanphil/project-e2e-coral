@@ -10,7 +10,11 @@ interface OrderActivity {
   _id: string;
   status: string;
   createdAt: string;
-  lineItems: { product: { name: string } | null; quantity: number; price: number }[];
+  lineItems: {
+    product: { name: string } | null;
+    quantity: number;
+    price: number;
+  }[];
   shippingAddress?: { city: string; state: string };
   ipAddress?: string;
   userAgent?: string;
@@ -25,7 +29,11 @@ interface CartActivity {
   _id: string;
   sessionId: string;
   lastActivityAt: string;
-  lineItems: { product: { name: string } | null; quantity: number; price: number }[];
+  lineItems: {
+    product: { name: string } | null;
+    quantity: number;
+    price: number;
+  }[];
   ipAddress?: string;
   userAgent?: string;
   referer?: string;
@@ -46,8 +54,18 @@ interface Stats {
 }
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const adminFetch = (path: string) => {
@@ -59,7 +77,9 @@ const adminFetch = (path: string) => {
 };
 
 const fmtMoney = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
+    n,
+  );
 
 const LOCALHOST_IPS = /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1|localhost)$/i;
 
@@ -85,31 +105,57 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   const currentYear = now.getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 4 + i + 1).reverse();
+  const years = Array.from(
+    { length: 5 },
+    (_, i) => currentYear - 4 + i + 1,
+  ).reverse();
 
   useEffect(() => {
-    setLoading(true);
-    adminFetch(`/api/admin/stats?month=${month}&year=${year}&activityTab=${activityTab}`)
-      .then((r) => r.json())
-      .then((d) => setStats(d))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      if (!cancelled) setLoading(true);
+      try {
+        const r = await adminFetch(
+          `/api/admin/stats?month=${month}&year=${year}&activityTab=${activityTab}`,
+        );
+        const d = await r.json();
+        if (!cancelled) {
+          setStats(d);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [month, year, activityTab]);
 
   const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear((y) => y - 1); }
-    else setMonth((m) => m - 1);
+    if (month === 1) {
+      setMonth(12);
+      setYear((y) => y - 1);
+    } else setMonth((m) => m - 1);
   };
 
   const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear((y) => y + 1); }
-    else setMonth((m) => m + 1);
+    if (month === 12) {
+      setMonth(1);
+      setYear((y) => y + 1);
+    } else setMonth((m) => m + 1);
   };
 
-  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
+  const isCurrentMonth =
+    month === now.getMonth() + 1 && year === now.getFullYear();
 
   const statCards = [
     { label: "Orders", value: stats?.totalOrders ?? 0, isMoney: false },
-    { label: "Products In Stock", value: stats?.inStockProducts ?? 0, isMoney: false },
+    {
+      label: "Products In Stock",
+      value: stats?.inStockProducts ?? 0,
+      isMoney: false,
+    },
     { label: "All Products", value: stats?.totalProducts ?? 0, isMoney: false },
     { label: "Categories", value: stats?.totalCategories ?? 0, isMoney: false },
     { label: "Revenue", value: (stats?.revenue ?? 0) / 100, isMoney: true },
@@ -120,7 +166,9 @@ export default function AdminPage() {
       <div className="card bg-base-100 shadow">
         <div className="card-body">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="mt-1 text-base-content/80">Overview for store management.</p>
+          <p className="mt-1 text-base-content/80">
+            Overview for store management.
+          </p>
         </div>
       </div>
 
@@ -137,18 +185,18 @@ export default function AdminPage() {
         <button
           className="btn btn-sm btn-ghost"
           onClick={nextMonth}
-          disabled={isCurrentMonth}
-        >
+          disabled={isCurrentMonth}>
           &#8250;
         </button>
 
         <select
           className="select select-sm select-bordered w-[90px]"
           value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-        >
+          onChange={(e) => setYear(Number(e.target.value))}>
           {years.map((y) => (
-            <option key={y} value={y}>{y}</option>
+            <option key={y} value={y}>
+              {y}
+            </option>
           ))}
         </select>
       </div>
@@ -184,20 +232,17 @@ export default function AdminPage() {
           <div className="tabs tabs-boxed mt-2 mb-2">
             <button
               className={`tab ${activityTab === "paid" ? "tab-active" : ""}`}
-              onClick={() => setActivityTab("paid")}
-            >
+              onClick={() => setActivityTab("paid")}>
               Paid
             </button>
             <button
               className={`tab ${activityTab === "cart" ? "tab-active" : ""}`}
-              onClick={() => setActivityTab("cart")}
-            >
+              onClick={() => setActivityTab("cart")}>
               Cart
             </button>
             <button
               className={`tab ${activityTab === "checkedOut" ? "tab-active" : ""}`}
-              onClick={() => setActivityTab("checkedOut")}
-            >
+              onClick={() => setActivityTab("checkedOut")}>
               Checked Out Not Paid
             </button>
           </div>
@@ -208,9 +253,12 @@ export default function AdminPage() {
             </div>
           ) : !stats?.recentActivity?.length ? (
             <p className="text-sm text-base-content/60 py-4">
-              {activityTab === "paid" && `No paid orders in ${MONTHS[month - 1]} ${year}.`}
-              {activityTab === "cart" && `No abandoned carts in ${MONTHS[month - 1]} ${year}.`}
-              {activityTab === "checkedOut" && `No checkout attempts without payment in ${MONTHS[month - 1]} ${year}.`}
+              {activityTab === "paid" &&
+                `No paid orders in ${MONTHS[month - 1]} ${year}.`}
+              {activityTab === "cart" &&
+                `No abandoned carts in ${MONTHS[month - 1]} ${year}.`}
+              {activityTab === "checkedOut" &&
+                `No checkout attempts without payment in ${MONTHS[month - 1]} ${year}.`}
             </p>
           ) : (
             <div className="overflow-x-auto mt-2">
@@ -222,25 +270,32 @@ export default function AdminPage() {
                     <th>Status</th>
                     <th>Items</th>
                     <th className="text-right">Total</th>
-                    {(activityTab === "cart" || activityTab === "checkedOut") && (
-                      <th>Visitor</th>
-                    )}
+                    {(activityTab === "cart" ||
+                      activityTab === "checkedOut") && <th>Visitor</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {stats.recentActivity.map((item) => {
                     const totalCents = item.lineItems.reduce(
                       (sum, li) => sum + li.price * li.quantity,
-                      0
+                      0,
                     );
                     const itemSummary = item.lineItems
-                      .map((li) => `${li.product?.name ?? "Product"} ×${li.quantity}`)
+                      .map(
+                        (li) =>
+                          `${li.product?.name ?? "Product"} ×${li.quantity}`,
+                      )
                       .join(", ");
-                    const date = item.type === "order" ? item.createdAt : item.lastActivityAt;
-                    const id = item.type === "order" ? item._id : item.sessionId;
+                    const date =
+                      item.type === "order"
+                        ? item.createdAt
+                        : item.lastActivityAt;
+                    const id =
+                      item.type === "order" ? item._id : item.sessionId;
                     const status = item.type === "order" ? item.status : "cart";
                     return (
-                      <tr key={item.type === "order" ? item._id : item.sessionId}>
+                      <tr
+                        key={item.type === "order" ? item._id : item.sessionId}>
                         <td className="font-mono text-xs text-base-content/60">
                           #{id.slice(-6).toUpperCase()}
                         </td>
@@ -256,28 +311,35 @@ export default function AdminPage() {
                               status === "paid"
                                 ? "badge-success"
                                 : status === "shipped"
-                                ? "badge-info"
-                                : status === "delivered"
-                                ? "badge-primary"
-                                : status === "cancelled"
-                                ? "badge-error"
-                                : status === "cart"
-                                ? "badge-ghost"
-                                : "badge-ghost"
-                            }`}
-                          >
+                                  ? "badge-info"
+                                  : status === "delivered"
+                                    ? "badge-primary"
+                                    : status === "cancelled"
+                                      ? "badge-error"
+                                      : status === "cart"
+                                        ? "badge-ghost"
+                                        : "badge-ghost"
+                            }`}>
                             {status}
                           </span>
                         </td>
-                        <td className="text-sm max-w-[200px] truncate" title={itemSummary}>
+                        <td
+                          className="text-sm max-w-[200px] truncate"
+                          title={itemSummary}>
                           {itemSummary}
                         </td>
-                        <td className="text-right font-medium">{fmtMoney(totalCents / 100)}</td>
-                        {(activityTab === "cart" || activityTab === "checkedOut") && (
+                        <td className="text-right font-medium">
+                          {fmtMoney(totalCents / 100)}
+                        </td>
+                        {(activityTab === "cart" ||
+                          activityTab === "checkedOut") && (
                           <td
                             className="text-sm max-w-[140px] truncate"
-                            title={[item.userAgent, item.ipAddress, item.referer].filter(Boolean).join(" | ") || undefined}
-                          >
+                            title={
+                              [item.userAgent, item.ipAddress, item.referer]
+                                .filter(Boolean)
+                                .join(" | ") || undefined
+                            }>
                             {formatVisitorInfo(item)}
                           </td>
                         )}

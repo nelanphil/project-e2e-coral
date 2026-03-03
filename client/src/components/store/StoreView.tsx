@@ -3,7 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Filter, X, ChevronLeft, ChevronRight, Plus, Minus, Search } from "lucide-react";
+import {
+  Filter,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Minus,
+  Search,
+} from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { stripHtml } from "@/lib/strip-html";
 import type { Product, Category } from "@/lib/types";
@@ -37,11 +45,7 @@ export function StoreView({
   initialCategorySlug,
   initialSearchQuery,
 }: StoreViewProps) {
-  const products = useProductStore((s) => s.products);
   const categories = useProductStore((s) => s.categories);
-  const total = useProductStore((s) => s.total);
-  const page = useProductStore((s) => s.page);
-  const limit = useProductStore((s) => s.limit);
   const setProducts = useProductStore((s) => s.setProducts);
   const lastFetchedAt = useProductStore((s) => s.lastFetchedAt);
   const fetchProducts = useProductStore((s) => s.fetchProducts);
@@ -63,7 +67,14 @@ export function StoreView({
         });
       }
     }
-  }, [initialProducts, initialCategories, initialTotal, initialPage, initialLimit, lastFetchedAt]);
+  }, [
+    initialProducts,
+    initialCategories,
+    initialTotal,
+    initialPage,
+    initialLimit,
+    lastFetchedAt,
+  ]);
 
   // Sync store when server passes new page/limit (e.g. after navigation)
   useEffect(() => {
@@ -93,7 +104,8 @@ export function StoreView({
   const [searchInput, setSearchInput] = useState(initialSearchQuery ?? "");
 
   useEffect(() => {
-    setSearchInput(initialSearchQuery ?? "");
+    const t = setTimeout(() => setSearchInput(initialSearchQuery ?? ""), 0);
+    return () => clearTimeout(t);
   }, [initialSearchQuery]);
 
   // Debounced URL update so search runs server-side across all products (all pagination)
@@ -101,10 +113,12 @@ export function StoreView({
   const initialSearchQueryRef = useRef(initialSearchQuery);
   const initialCategorySlugRef = useRef(initialCategorySlug);
   const displayLimitRef = useRef(initialLimit);
-  searchInputRef.current = searchInput;
-  initialSearchQueryRef.current = initialSearchQuery;
-  initialCategorySlugRef.current = initialCategorySlug;
-  displayLimitRef.current = initialLimit;
+  useEffect(() => {
+    searchInputRef.current = searchInput;
+    initialSearchQueryRef.current = initialSearchQuery;
+    initialCategorySlugRef.current = initialCategorySlug;
+    displayLimitRef.current = initialLimit;
+  }, [searchInput, initialSearchQuery, initialCategorySlug, initialLimit]);
 
   useEffect(() => {
     const trimmed = searchInput.trim();
@@ -115,9 +129,11 @@ export function StoreView({
       const nextTrimmed = searchInputRef.current.trim();
       if (nextTrimmed === (initialSearchQueryRef.current ?? "").trim()) return;
       const params = new URLSearchParams();
-      if (initialCategorySlugRef.current) params.set("category", initialCategorySlugRef.current);
+      if (initialCategorySlugRef.current)
+        params.set("category", initialCategorySlugRef.current);
       if (nextTrimmed) params.set("q", nextTrimmed);
-      if (displayLimitRef.current !== 50) params.set("limit", String(displayLimitRef.current));
+      if (displayLimitRef.current !== 50)
+        params.set("limit", String(displayLimitRef.current));
       const qs = params.toString();
       router.replace(qs ? `/store?${qs}` : "/store");
     }, SEARCH_DEBOUNCE_MS);
@@ -126,7 +142,8 @@ export function StoreView({
 
   // Use server-passed data for display so visibility-triggered fetchProducts() (wrong params) doesn't shrink the list
   const displayProducts = initialProducts;
-  const displayCategories = categories.length > 0 ? categories : initialCategories;
+  const displayCategories =
+    categories.length > 0 ? categories : initialCategories;
   const storeCategories = useMemo(
     () =>
       displayCategories.filter(
@@ -138,10 +155,15 @@ export function StoreView({
   );
   const selectedCategoryId = useMemo(() => {
     if (!initialCategorySlug) return null;
-    return storeCategories.find((c) => c.slug === initialCategorySlug)?._id ?? null;
+    return (
+      storeCategories.find((c) => c.slug === initialCategorySlug)?._id ?? null
+    );
   }, [storeCategories, initialCategorySlug]);
   const selectedCategory = useMemo(
-    () => (selectedCategoryId ? storeCategories.find((c) => c._id === selectedCategoryId) ?? null : null),
+    () =>
+      selectedCategoryId
+        ? (storeCategories.find((c) => c._id === selectedCategoryId) ?? null)
+        : null,
     [storeCategories, selectedCategoryId],
   );
   const displayTotal = initialTotal;
@@ -159,7 +181,8 @@ export function StoreView({
     const l = opts.limit ?? displayLimit;
     const params = new URLSearchParams();
     if (opts.categorySlug) params.set("category", opts.categorySlug);
-    const qVal = opts.searchQuery !== undefined ? opts.searchQuery : initialSearchQuery;
+    const qVal =
+      opts.searchQuery !== undefined ? opts.searchQuery : initialSearchQuery;
     if (qVal) params.set("q", qVal);
     if (p > 1) params.set("page", String(p));
     if (l !== 50) params.set("limit", String(l));
@@ -201,8 +224,7 @@ export function StoreView({
           fixed left-0 top-[var(--header-height)] z-50 h-[calc(100vh-var(--header-height))] w-64 shrink-0 transform transition-transform duration-200 ease-out lg:top-0 lg:h-full lg:static lg:z-auto lg:block lg:translate-x-0
           ${mobileFiltersOpen ? "translate-x-0" : "-translate-x-full"}
         `}
-        aria-label="Filters"
-      >
+        aria-label="Filters">
         <div className="card h-full w-full bg-base-100 shadow border border-base-300">
           <div className="card-body p-0 flex flex-col h-full min-h-0">
             <div className="flex items-center justify-between border-b border-base-300 p-4 shrink-0">
@@ -211,15 +233,16 @@ export function StoreView({
                 type="button"
                 className="btn btn-ghost btn-sm btn-square lg:hidden"
                 onClick={() => setMobileFiltersOpen(false)}
-                aria-label="Close filters"
-              >
+                aria-label="Close filters">
                 <X className="size-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="store-search" className="flex items-center gap-2 text-sm font-medium text-base-content/70 mb-2">
+                  <label
+                    htmlFor="store-search"
+                    className="flex items-center gap-2 text-sm font-medium text-base-content/70 mb-2">
                     <Search className="size-4 shrink-0" aria-hidden />
                     Search by name
                   </label>
@@ -239,8 +262,7 @@ export function StoreView({
                     className="flex w-full items-center gap-2 text-left text-sm font-medium text-base-content/70 hover:text-base-content"
                     onClick={() => setCategoryFilterOpen((o) => !o)}
                     aria-expanded={categoryFilterOpen}
-                    aria-controls="store-category-list"
-                  >
+                    aria-controls="store-category-list">
                     {categoryFilterOpen ? (
                       <Minus className="size-4 shrink-0" aria-hidden />
                     ) : (
@@ -248,39 +270,36 @@ export function StoreView({
                     )}
                     <span>Category</span>
                   </button>
-                <ul
-                  id="store-category-list"
-                  className={`menu menu-vertical rounded-box gap-1 bg-transparent p-0 transition-all ${
-                    categoryFilterOpen ? "visible" : "hidden"
-                  }`}
-                  role="list"
-                >
-                  <li>
-                    <Link
-                      href={buildStoreUrl({ page: 1, categorySlug: null })}
-                      className={selectedCategoryId === null ? "active" : ""}
-                      onClick={() => setMobileFiltersOpen(false)}
-                    >
-                      All
-                    </Link>
-                  </li>
-                  {storeCategories.map((cat) => (
-                    <li key={cat._id}>
+                  <ul
+                    id="store-category-list"
+                    className={`menu menu-vertical rounded-box gap-1 bg-transparent p-0 transition-all ${
+                      categoryFilterOpen ? "visible" : "hidden"
+                    }`}
+                    role="list">
+                    <li>
                       <Link
-                        href={buildStoreUrl({
-                          page: 1,
-                          categorySlug: cat.slug,
-                        })}
-                        className={
-                          selectedCategoryId === cat._id ? "active" : ""
-                        }
-                        onClick={() => setMobileFiltersOpen(false)}
-                      >
-                        {cat.name}
+                        href={buildStoreUrl({ page: 1, categorySlug: null })}
+                        className={selectedCategoryId === null ? "active" : ""}
+                        onClick={() => setMobileFiltersOpen(false)}>
+                        All
                       </Link>
                     </li>
-                  ))}
-                </ul>
+                    {storeCategories.map((cat) => (
+                      <li key={cat._id}>
+                        <Link
+                          href={buildStoreUrl({
+                            page: 1,
+                            categorySlug: cat.slug,
+                          })}
+                          className={
+                            selectedCategoryId === cat._id ? "active" : ""
+                          }
+                          onClick={() => setMobileFiltersOpen(false)}>
+                          {cat.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
@@ -298,14 +317,15 @@ export function StoreView({
                 type="button"
                 className="btn btn-ghost btn-sm gap-2 lg:hidden"
                 onClick={() => setMobileFiltersOpen(true)}
-                aria-label="Open filters"
-              >
+                aria-label="Open filters">
                 <Filter className="size-5" />
                 Filters
               </button>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-base-content/70">Per page:</span>
+                  <span className="text-sm text-base-content/70">
+                    Per page:
+                  </span>
                   <div className="join">
                     {allowedLimits.map((n) => (
                       <Link
@@ -317,8 +337,7 @@ export function StoreView({
                         })}
                         className={`join-item btn btn-sm ${displayLimit === n ? "btn-active" : ""}`}
                         aria-label={`${n} products per page`}
-                        aria-current={displayLimit === n ? "true" : undefined}
-                      >
+                        aria-current={displayLimit === n ? "true" : undefined}>
                         {n}
                       </Link>
                     ))}
@@ -334,8 +353,7 @@ export function StoreView({
                         className={`join-item btn btn-sm ${columns === n ? "btn-active" : ""}`}
                         onClick={() => setColumns(n)}
                         aria-label={`${n} products per row`}
-                        aria-pressed={columns === n}
-                      >
+                        aria-pressed={columns === n}>
                         {n}
                       </button>
                     ))}
@@ -357,8 +375,7 @@ export function StoreView({
                     </span>
                     <Link
                       href={buildStoreUrl({ page: 1, categorySlug: null })}
-                      className="link link-hover text-sm text-primary"
-                    >
+                      className="link link-hover text-sm text-primary">
                       Clear filter
                     </Link>
                   </>
@@ -374,8 +391,7 @@ export function StoreView({
                     <button
                       type="button"
                       onClick={() => setSearchInput("")}
-                      className="link link-hover text-sm text-primary"
-                    >
+                      className="link link-hover text-sm text-primary">
                       Clear search
                     </button>
                   </>
@@ -403,8 +419,7 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage <= 1 ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Previous page"
-                    >
+                      aria-label="Previous page">
                       <ChevronLeft className="size-4" />
                     </Link>
                     <div className="join">
@@ -422,7 +437,9 @@ export function StoreView({
                         }, [])
                         .map((p, idx) =>
                           p === -1 ? (
-                            <span key={`ellipsis-top-${idx}`} className="join-item btn btn-sm btn-ghost btn-disabled no-animation">
+                            <span
+                              key={`ellipsis-top-${idx}`}
+                              className="join-item btn btn-sm btn-ghost btn-disabled no-animation">
                               …
                             </span>
                           ) : (
@@ -434,11 +451,12 @@ export function StoreView({
                               })}
                               className={`join-item btn btn-sm ${displayPage === p ? "btn-active" : ""}`}
                               aria-label={`Page ${p}`}
-                              aria-current={displayPage === p ? "page" : undefined}
-                            >
+                              aria-current={
+                                displayPage === p ? "page" : undefined
+                              }>
                               {p}
                             </Link>
-                          )
+                          ),
                         )}
                     </div>
                     <Link
@@ -451,8 +469,7 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage >= totalPages ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Next page"
-                    >
+                      aria-label="Next page">
                       <ChevronRight className="size-4" />
                     </Link>
                   </div>
@@ -462,15 +479,13 @@ export function StoreView({
 
             {/* Product grid: 2 cols mobile, 4 or 6 desktop */}
             <ul
-              className={`grid gap-6 grid-cols-2 mt-6 ${columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-6"}`}
-            >
+              className={`grid gap-6 grid-cols-1 sm:grid-cols-2 mt-6 ${columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-6"}`}>
               {filteredProducts.map((p) => (
                 <li key={p._id}>
                   <div className="card card-compact bg-base-100 shadow hover:shadow-md transition h-full flex flex-col">
                     <Link
                       href={`/coral/${p.slug}?from=store`}
-                      className="flex flex-col flex-1"
-                    >
+                      className="flex flex-col flex-1">
                       <figure className="bg-base-200 h-48 relative shrink-0 overflow-hidden">
                         {p.images?.[0] ? (
                           <Image
@@ -499,7 +514,11 @@ export function StoreView({
                             </span>
                           )}
                       </p>
-                      <AddToCartButton productId={p._id} availableQuantity={p.inventory?.quantity} className="btn-sm mt-0 shrink-0" />
+                      <AddToCartButton
+                        productId={p._id}
+                        availableQuantity={p.inventory?.quantity}
+                        className="btn-sm mt-0 shrink-0"
+                      />
                     </div>
                   </div>
                 </li>
@@ -531,8 +550,7 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage <= 1 ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Previous page"
-                    >
+                      aria-label="Previous page">
                       <ChevronLeft className="size-4" />
                     </Link>
                     <div className="join">
@@ -550,7 +568,9 @@ export function StoreView({
                         }, [])
                         .map((p, idx) =>
                           p === -1 ? (
-                            <span key={`ellipsis-b-${idx}`} className="join-item btn btn-sm btn-ghost btn-disabled no-animation">
+                            <span
+                              key={`ellipsis-b-${idx}`}
+                              className="join-item btn btn-sm btn-ghost btn-disabled no-animation">
                               …
                             </span>
                           ) : (
@@ -562,11 +582,12 @@ export function StoreView({
                               })}
                               className={`join-item btn btn-sm ${displayPage === p ? "btn-active" : ""}`}
                               aria-label={`Page ${p}`}
-                              aria-current={displayPage === p ? "page" : undefined}
-                            >
+                              aria-current={
+                                displayPage === p ? "page" : undefined
+                              }>
                               {p}
                             </Link>
-                          )
+                          ),
                         )}
                     </div>
                     <Link
@@ -579,8 +600,7 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage >= totalPages ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Next page"
-                    >
+                      aria-label="Next page">
                       <ChevronRight className="size-4" />
                     </Link>
                   </div>

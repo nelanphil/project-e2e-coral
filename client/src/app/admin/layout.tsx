@@ -51,23 +51,20 @@ export default function AdminLayout({
           lg:static lg:top-auto lg:h-auto lg:translate-x-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
-        aria-label="Admin navigation"
-      >
+        aria-label="Admin navigation">
         <div className="card-body p-4 h-full flex flex-col">
           <div className="flex items-center justify-between">
             <Link
               href="/admin"
               className="font-bold text-lg"
-              onClick={closeSidebar}
-            >
+              onClick={closeSidebar}>
               Admin
             </Link>
             <button
               type="button"
               className="btn btn-ghost btn-sm btn-square lg:hidden"
               aria-label="Close menu"
-              onClick={closeSidebar}
-            >
+              onClick={closeSidebar}>
               <X className="size-5" />
             </button>
           </div>
@@ -118,6 +115,37 @@ export default function AdminLayout({
                 Rewards
               </Link>
             </li>
+            <li>
+              <Link href="/admin/discounts" onClick={closeSidebar}>
+                Discounts
+              </Link>
+            </li>
+            <li>
+              <details>
+                <summary>Content</summary>
+                <ul>
+                  <li>
+                    <Link href="/admin/content" onClick={closeSidebar}>
+                      Page Editor
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/admin/content/contact-submissions"
+                      onClick={closeSidebar}>
+                      Contact Submissions
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/admin/content/scrolling-banner"
+                      onClick={closeSidebar}>
+                      Scrolling Banner
+                    </Link>
+                  </li>
+                </ul>
+              </details>
+            </li>
           </ul>
         </div>
       </aside>
@@ -129,8 +157,7 @@ export default function AdminLayout({
             type="button"
             className="btn btn-ghost btn-sm btn-square"
             aria-label="Open admin menu"
-            onClick={() => setSidebarOpen(true)}
-          >
+            onClick={() => setSidebarOpen(true)}>
             <Menu className="size-5" />
           </button>
           <span className="font-semibold text-lg">Admin</span>

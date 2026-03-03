@@ -68,7 +68,7 @@ export default async function Home() {
             </p>
             <p className="text-lg mb-4">
               We work directly with trusted suppliers to ensure every coral
-              meets our strict quality standards. Whether you're looking to
+              meets our strict quality standards. Whether you&apos;re looking to
               start your collection or add rare pieces to an existing one, we
               have something special for everyone.
             </p>
@@ -132,8 +132,7 @@ export default async function Home() {
                 <Link
                   key={product._id}
                   href={`/coral/${product.slug}?from=store`}
-                  className="card bg-base-200 shadow-md hover:shadow-lg transition"
-                >
+                  className="card bg-base-200 shadow-md hover:shadow-lg transition">
                   <figure className="bg-base-300 h-48" />
                   <div className="card-body">
                     <h3 className="card-title text-lg">{product.name}</h3>
@@ -177,11 +176,9 @@ export default async function Home() {
       </section>
 
       {/* Categories Section */}
-      {categories
-        .filter(
-          (c) => !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name)
-        )
-        .length > 0 && (
+      {categories.filter(
+        (c) => !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name),
+      ).length > 0 && (
         <section className="py-16 px-4 bg-base-200">
           <div className="container mx-auto max-w-4xl">
             <h2 className="text-3xl font-bold text-center mb-8">
@@ -191,17 +188,16 @@ export default async function Home() {
               {categories
                 .filter(
                   (c) =>
-                    !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name)
+                    !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name),
                 )
                 .map((category) => (
-                <Link
-                  key={category._id}
-                  href={`/category/${category.slug}`}
-                  className="btn btn-outline btn-lg"
-                >
-                  {category.name}
-                </Link>
-              ))}
+                  <Link
+                    key={category._id}
+                    href={`/category/${category.slug}`}
+                    className="btn btn-outline btn-lg">
+                    {category.name}
+                  </Link>
+                ))}
             </div>
           </div>
         </section>

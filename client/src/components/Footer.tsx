@@ -41,11 +41,11 @@ export function Footer() {
           {/* Contact & Legal */}
           <div>
             <h4 className="font-semibold mb-2">Information</h4>
-            <ul className="space-y-1 text-sm text-base-content/70">
-              <li>Customer Service</li>
-              <li>Shipping & Returns</li>
-              <li>Privacy Policy</li>
-              <li>Terms of Service</li>
+            <ul className="space-y-1 text-sm">
+              <li><Link href="/customer-service" className="link link-hover text-base-content/70">Customer Service</Link></li>
+              <li><Link href="/shipping-returns" className="link link-hover text-base-content/70">Shipping &amp; Returns</Link></li>
+              <li><Link href="/privacy-policy" className="link link-hover text-base-content/70">Privacy Policy</Link></li>
+              <li><Link href="/terms-of-service" className="link link-hover text-base-content/70">Terms of Service</Link></li>
             </ul>
           </div>
         </div>

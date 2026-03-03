@@ -117,7 +117,42 @@ export interface OrderConfirmation {
     country: string;
   };
   status: string;
+  taxAmount?: number;
+  shippingAmount?: number;
+  pointsApplied?: number;
+  pointsDiscountCents?: number;
+  discountCode?: string;
+  discountAmountCents?: number;
+  discountType?: "product" | "shipping";
   createdAt: string;
+}
+
+export interface Discount {
+  _id: string;
+  code: string;
+  description: string;
+  discountType: "product" | "shipping";
+  valueType: "percentage" | "fixed";
+  valueCents: number;
+  valuePercent: number;
+  maxDiscountCents: number;
+  minOrderCents: number;
+  maxUsesTotal: number;
+  maxUsesPerUser: number;
+  usedCount: number;
+  startDate?: string;
+  expiresAt?: string;
+  isActive: boolean;
+  firstOrderOnly: boolean;
+  applicableProducts: { _id: string; name: string; slug: string }[];
+  usageLog: {
+    userId?: { _id: string; email: string; name: string };
+    cookieId?: string;
+    orderId: { _id: string; createdAt: string } | string;
+    usedAt: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PriceLog {
@@ -135,4 +170,86 @@ export interface PriceLog {
   notes?: string;
   changedBy?: { _id: string; name: string; email: string };
   createdAt: string;
+}
+
+// ─── Admin Orders ───────────────────────────────────────────────────────────
+
+export interface AdminOrderUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface AdminOrderLineItem {
+  product: {
+    _id: string;
+    name: string;
+    slug: string;
+    images: string[];
+    price?: number;
+  };
+  quantity: number;
+  price: number; // cents
+}
+
+export interface AdminOrder {
+  _id: string;
+  orderNumber?: string;
+  user?: AdminOrderUser | null;
+  email?: string;
+  cartSessionId?: string;
+  lineItems: AdminOrderLineItem[];
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  status: string;
+  paymentStatus?: string;
+  taxAmount?: number;
+  shippingAmount?: number;
+  stripePaymentIntentId?: string;
+  stripeCheckoutSessionId?: string;
+  paypalOrderId?: string;
+  trackingNumber?: string;
+  pointsApplied?: number;
+  pointsDiscountCents?: number;
+  discountCode?: string;
+  discountAmountCents?: number;
+  discountType?: "product" | "shipping";
+  ipAddress?: string;
+  userAgent?: string;
+  referer?: string;
+  geoCountry?: string;
+  geoRegion?: string;
+  geoCity?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminOrderCounts {
+  total: number;
+  pending: number;
+  processing: number;
+  shipped: number;
+  delivered: number;
+  cancelled: number;
+  refunded: number;
+}
+
+export interface AdminOrdersResponse {
+  orders: AdminOrder[];
+  total: number;
+  page: number;
+  limit: number;
+  counts: AdminOrderCounts;
+  revenue: number;
+}
+
+export interface AdminOrderDetailResponse {
+  order: AdminOrder;
 }
