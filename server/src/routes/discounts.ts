@@ -148,7 +148,9 @@ discountsRouter.post("/validate", optionalAuth, async (req, res) => {
       let qualifyingSubtotal = sub;
       if (discount.applicableProducts.length > 0 && Array.isArray(cartItems)) {
         const applicableIds = new Set(
-          discount.applicableProducts.map((id) => id.toString()),
+          discount.applicableProducts.map((id: { toString(): string }) =>
+            id.toString(),
+          ),
         );
         qualifyingSubtotal = cartItems
           .filter((item) => applicableIds.has(item.productId))

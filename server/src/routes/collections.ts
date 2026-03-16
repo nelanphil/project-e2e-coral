@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import type { AuthRequest } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/auth.js";
-import { Collection } from "../models/Collection.js";
-import { Product } from "../models/Product.js";
+import { Collection, type ICollection } from "../models/Collection.js";
+import { Product, type IProduct } from "../models/Product.js";
 import { Inventory } from "../models/Inventory.js";
 import { User } from "../models/User.js";
 
@@ -85,8 +85,8 @@ async function getCollectionProductIds(
     deletedAt: null,
   })
     .select("_id")
-    .lean();
-  const fromProducts = tagged.map((p) => p._id as mongoose.Types.ObjectId);
+    .lean<Array<Pick<IProduct, "_id">>>();
+  const fromProducts = tagged.map((p) => p._id);
 
   // Build a deduplicated union; collection.products order comes first
   const idMap = new Map<string, mongoose.Types.ObjectId>();
@@ -103,7 +103,7 @@ collectionsRouter.get("/", optionalAdmin, async (req, res) => {
     const isAdmin = (req as AuthRequest & { isAdmin?: boolean }).isAdmin;
     const collections = await Collection.find({ deletedAt: null })
       .sort({ name: 1 })
-      .lean();
+      .lean<ICollection[]>();
 
     const collectionsWithProducts = await Promise.all(
       collections.map(async (c) => {
@@ -123,7 +123,7 @@ collectionsRouter.get("/", optionalAdmin, async (req, res) => {
         }
         const products = await Product.find(productFilter)
           .select(PRODUCT_SELECT)
-          .lean();
+          .lean<IProduct[]>();
         const orderMap = new Map(productIds.map((id, i) => [String(id), i]));
         const sorted = [...products].sort(
           (a, b) =>
@@ -145,7 +145,7 @@ collectionsRouter.get("/", optionalAdmin, async (req, res) => {
 
 collectionsRouter.get("/id/:id", requireAdmin, async (req, res) => {
   try {
-    const collection = await Collection.findById(req.params.id).lean();
+    const collection = await Collection.findById(req.params.id).lean<ICollection | null>();
     if (!collection) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -161,7 +161,7 @@ collectionsRouter.get("/id/:id", requireAdmin, async (req, res) => {
             deletedAt: null,
           })
             .select(PRODUCT_SELECT)
-            .lean()
+            .lean<IProduct[]>()
         : [];
     const orderMap = new Map(productIds.map((id, i) => [String(id), i]));
     const sorted = [...products].sort(
@@ -181,7 +181,7 @@ collectionsRouter.get("/:slug", optionalAdmin, async (req, res) => {
     const collection = await Collection.findOne({
       slug: req.params.slug,
       deletedAt: null,
-    }).lean();
+    }).lean<ICollection | null>();
     if (!collection) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -202,7 +202,7 @@ collectionsRouter.get("/:slug", optionalAdmin, async (req, res) => {
     }
     const products = await Product.find(productFilter)
       .select(PRODUCT_SELECT)
-      .lean();
+      .lean<IProduct[]>();
     const orderMap = new Map(productIds.map((id, i) => [String(id), i]));
     const sorted = [...products].sort(
       (a, b) =>
@@ -254,7 +254,7 @@ collectionsRouter.post("/", requireAdmin, async (req, res) => {
 
 collectionsRouter.put("/:id", requireAdmin, async (req, res) => {
   const { name, slug, description, carouselDescription, showInCarousel, tags } = req.body;
-  const existingCollection = await Collection.findById(req.params.id).lean();
+  const existingCollection = await Collection.findById(req.params.id).lean<ICollection | null>();
   if (!existingCollection) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -345,7 +345,10 @@ collectionsRouter.post("/:id/products", requireAdmin, async (req, res) => {
 
   // Add products to collection (avoid duplicates)
   const newProductIds = productObjectIds.filter(
-    (id) => !collection.products.some((p) => p.toString() === id.toString()),
+    (id) =>
+      !collection.products.some(
+        (p: mongoose.Types.ObjectId) => p.toString() === id.toString(),
+      ),
   );
   if (newProductIds.length > 0) {
     collection.products.push(...newProductIds);
@@ -383,7 +386,7 @@ collectionsRouter.delete(
 
     // Remove product from collection
     collection.products = collection.products.filter(
-      (p) => p.toString() !== productId.toString(),
+      (p: mongoose.Types.ObjectId) => p.toString() !== productId.toString(),
     );
     await collection.save();
 

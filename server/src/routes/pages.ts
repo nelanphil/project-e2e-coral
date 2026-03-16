@@ -41,7 +41,7 @@ pagesRouter.get("/:slug", optionalAuth, async (req: AuthRequest, res) => {
 
     let isAdmin = false;
     if (req.userId) {
-      const user = await User.findById(req.userId).lean();
+      const user = await User.findById(req.userId).lean<{ role?: string } | null>();
       isAdmin = user?.role === "admin";
     }
 

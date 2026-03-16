@@ -38,7 +38,9 @@ async function sync() {
     const productIds = collectionToProducts.get(String(c._id));
     if (!productIds || productIds.size === 0) continue;
 
-    const existingIds = new Set((c.products ?? []).map((id) => String(id)));
+    const existingIds = new Set(
+      (c.products ?? []).map((id: mongoose.Types.ObjectId) => String(id)),
+    );
     const toAdd = [...productIds].filter((id) => !existingIds.has(id));
     if (toAdd.length === 0) continue;
 

@@ -2,7 +2,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { requireAdmin } from "../middleware/auth.js";
 import { Collection } from "../models/Collection.js";
-import { Product } from "../models/Product.js";
+import { Product, type IProduct } from "../models/Product.js";
 import { Inventory } from "../models/Inventory.js";
 import { InventoryLog } from "../models/InventoryLog.js";
 import { PriceLog } from "../models/PriceLog.js";
@@ -96,7 +96,7 @@ productsRouter.get("/", async (req, res) => {
 
     if (sortByQuantity) {
       // Use aggregation to sort by inventory quantity
-      const pipeline: mongoose.mongo.PipelineStage[] = [
+      const pipeline: mongoose.PipelineStage[] = [
         { $match: filter },
         {
           $lookup: {
@@ -111,7 +111,9 @@ productsRouter.get("/", async (req, res) => {
             _quantity: { $ifNull: [{ $arrayElemAt: ["$_inv.quantity", 0] }, 0] },
           },
         },
-        ...(!includeHidden ? [{ $match: { _quantity: { $gt: 0 } } } as mongoose.mongo.PipelineStage] : []),
+        ...(!includeHidden
+          ? [{ $match: { _quantity: { $gt: 0 } } }]
+          : []),
         { $sort: { _quantity: sortOrder } },
         { $skip: skip },
         { $limit: limit },
@@ -161,12 +163,12 @@ productsRouter.get("/", async (req, res) => {
           },
         },
       ];
-      const aggResult = await Product.aggregate(pipeline);
+      const aggResult = await Product.aggregate<Record<string, unknown>>(pipeline);
       products = aggResult;
       total = includeHidden ? await Product.countDocuments(filter) : (inStockTotal ?? 0);
     } else if (!includeHidden) {
       // Paginate over in-stock products only so store sees correct total and page size
-      const pipeline: mongoose.mongo.PipelineStage[] = [
+      const pipeline: mongoose.PipelineStage[] = [
         { $match: filter },
         {
           $lookup: {
@@ -231,7 +233,7 @@ productsRouter.get("/", async (req, res) => {
           },
         },
       ];
-      products = await Product.aggregate(pipeline);
+      products = await Product.aggregate<Record<string, unknown>>(pipeline);
       total = inStockTotal ?? 0;
     } else {
       [products, total] = await Promise.all([
@@ -278,12 +280,12 @@ productsRouter.get("/id/:id", requireAdmin, async (req, res) => {
     const product = await Product.findById(req.params.id)
       .populate("category", "name slug")
       .populate("collections", "name slug")
-      .lean();
+      .lean<IProduct | null>();
     if (!product) {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    const inv = await Inventory.findOne({ product: product._id }).lean();
+    const inv = await Inventory.findOne({ product: product._id }).lean<{ quantity?: number } | null>();
     res.json({ ...product, inventory: { quantity: inv?.quantity ?? 0 } });
   } catch {
     res.status(500).json({ error: "Failed to get product" });
@@ -298,12 +300,12 @@ productsRouter.get("/:slug", async (req, res) => {
       isActive: { $ne: false },
     })
       .populate("category", "name slug")
-      .lean();
+      .lean<IProduct | null>();
     if (!product) {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    const inv = await Inventory.findOne({ product: product._id }).lean();
+    const inv = await Inventory.findOne({ product: product._id }).lean<{ quantity?: number } | null>();
     res.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     res.json({ ...product, inventory: { quantity: inv?.quantity ?? 0 } });
   } catch {
@@ -431,7 +433,7 @@ productsRouter.post("/", requireAdmin, async (req, res) => {
 
 productsRouter.put("/:id", requireAdmin, async (req, res) => {
   const updates = req.body;
-  const existingProduct = await Product.findById(req.params.id).lean();
+  const existingProduct = await Product.findById(req.params.id).lean<IProduct | null>();
   if (!existingProduct) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -512,7 +514,7 @@ productsRouter.put("/:id", requireAdmin, async (req, res) => {
     req.params.id,
     productUpdate,
     { new: true },
-  ).lean();
+  ).lean<IProduct | null>();
 
   if (!product) {
     res.status(404).json({ error: "Not found" });
@@ -525,10 +527,10 @@ productsRouter.put("/:id", requireAdmin, async (req, res) => {
       c && typeof c === "object" && "_id" in c
         ? String((c as { _id: unknown })._id)
         : String(c);
-    const oldIds = new Set(
+    const oldIds = new Set<string>(
       ((existingProduct as any).collections ?? []).map(toIdStr),
     );
-    const newIds = new Set(
+    const newIds = new Set<string>(
       ((productUpdate.collections as mongoose.Types.ObjectId[]) ?? []).map(
         (c) => String(c),
       ),

@@ -20,7 +20,7 @@ import { logOrderStatusChange } from "../lib/order-status-log.js";
 import { verifyStripePayment } from "./orders.js";
 
 import { Discount } from "../models/Discount.js";
-import { TickerItem } from "../models/TickerItem.js";
+import { TickerItem, type ITickerItem } from "../models/TickerItem.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
@@ -563,7 +563,7 @@ adminRouter.get("/inventory", async (req, res) => {
     const sortKey = allowedSortFields[sortField] ?? "updatedAt";
     const sortObj: Record<string, 1 | -1> = { [sortKey]: sortOrder };
 
-    const pipeline: mongoose.mongo.PipelineStage[] = [
+    const pipeline: mongoose.PipelineStage[] = [
       {
         $lookup: {
           from: "products",
@@ -1244,7 +1244,9 @@ adminRouter.get("/discounts/:id/usage", async (req, res) => {
 
 adminRouter.get("/ticker-items", async (_req, res) => {
   try {
-    const items = await TickerItem.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
+    const items = await TickerItem.find()
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .lean<ITickerItem[]>();
     res.json({ items });
   } catch {
     res.status(500).json({ error: "Failed to fetch ticker items" });
@@ -1260,7 +1262,7 @@ adminRouter.post("/ticker-items", async (req, res) => {
     }
     const last = await TickerItem.findOne({ deletedAt: null })
       .sort({ sortOrder: -1 })
-      .lean();
+      .lean<ITickerItem | null>();
     const sortOrder = last ? (last.sortOrder ?? 0) + 1 : 0;
     const item = await TickerItem.create({ text: text.trim(), deletedAt: null, sortOrder });
     res.status(201).json({ item });
@@ -1302,7 +1304,7 @@ adminRouter.patch("/ticker-items/:id/move", async (req, res) => {
     }
     const allActive = await TickerItem.find({ deletedAt: null })
       .sort({ sortOrder: 1, createdAt: 1 })
-      .lean();
+      .lean<ITickerItem[]>();
     const idx = allActive.findIndex((i) => String(i._id) === id);
     if (idx === -1) {
       res.status(404).json({ error: "Ticker item not found" });
@@ -1321,7 +1323,9 @@ adminRouter.patch("/ticker-items/:id/move", async (req, res) => {
       TickerItem.findByIdAndUpdate(current._id, { $set: { sortOrder: siblingOrder } }),
       TickerItem.findByIdAndUpdate(sibling._id, { $set: { sortOrder: currentOrder } }),
     ]);
-    const updated = await TickerItem.find().sort({ sortOrder: 1, createdAt: 1 }).lean();
+    const updated = await TickerItem.find()
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .lean<ITickerItem[]>();
     res.json({ items: updated });
   } catch {
     res.status(500).json({ error: "Failed to reorder ticker items" });
@@ -1367,7 +1371,7 @@ adminRouter.patch("/ticker-items/:id/restore", async (req, res) => {
 adminRouter.delete("/ticker-items/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = await TickerItem.findById(id).lean();
+    const existing = await TickerItem.findById(id).lean<ITickerItem | null>();
     if (!existing) {
       res.status(404).json({ error: "Ticker item not found" });
       return;

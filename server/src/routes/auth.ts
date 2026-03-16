@@ -196,7 +196,7 @@ authRouter.post("/guest", async (req, res) => {
       userAgent,
       referrer: referrer || user.referrer,
     });
-    user = (await User.findById(user._id).lean()) as IUser;
+    user = await User.findById(user._id).lean<IUser | null>();
   } else {
     // Create new guest user
     try {
@@ -218,10 +218,10 @@ authRouter.post("/guest", async (req, res) => {
         (err as { code: number }).code === 11000
       ) {
         // Race condition: guest was created between findOne and create
-        user = (await User.findOne({
+        user = await User.findOne({
           cookieId: cookieId.trim(),
           role: "guest",
-        }).lean()) as IUser;
+        }).lean<IUser | null>();
         if (!user) {
           res.status(500).json({ error: "Failed to create guest user" });
           return;

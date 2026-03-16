@@ -23,7 +23,11 @@ async function cleanProductNames() {
     console.log("✅ Database connected");
 
     // Wait for indexes to be ready
-    await mongoose.connection.db.admin().ping();
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error("Database connection not ready");
+    }
+    await db.admin().ping();
     console.log("✅ Database ready");
 
     if (isDryRun) {

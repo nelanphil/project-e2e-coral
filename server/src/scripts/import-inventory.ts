@@ -3,15 +3,11 @@ import { connectDb } from "../lib/db.js";
 import { Category } from "../models/Category.js";
 import { Product } from "../models/Product.js";
 import { Inventory } from "../models/Inventory.js";
+import type { ICategory } from "../models/Category.js";
 import { parse } from "csv-parse/sync";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
 import mongoose from "mongoose";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 function slugify(text: string): string {
   return String(text || "")
@@ -33,11 +29,15 @@ async function importInventory() {
     console.log("✅ Database connected");
 
     // Wait for indexes to be ready
-    await mongoose.connection.db.admin().ping();
+    const db = mongoose.connection.db;
+    if (!db) {
+      throw new Error("Database connection not ready");
+    }
+    await db.admin().ping();
     console.log("✅ Database ready");
 
     // Read CSV file
-    const csvPath = join(__dirname, "inventory_export.csv");
+    const csvPath = join(process.cwd(), "src", "scripts", "inventory_export.csv");
     console.log(`Reading CSV file from: ${csvPath}`);
     const csvContent = readFileSync(csvPath, "utf-8");
 
@@ -53,7 +53,7 @@ async function importInventory() {
     // Get or create "Uncategorized" category
     let uncategorizedCategory = await Category.findOne({
       slug: "uncategorized",
-    }).lean();
+    }).lean<ICategory | null>();
 
     if (!uncategorizedCategory) {
       console.log("Creating 'Uncategorized' category...");
@@ -62,14 +62,15 @@ async function importInventory() {
         slug: "uncategorized",
       });
       uncategorizedCategory = newCategory.toObject();
-      console.log(
-        `✅ Created category: ${uncategorizedCategory.name} (ID: ${uncategorizedCategory._id})`,
-      );
-    } else {
-      console.log(
-        `✅ Using existing category: ${uncategorizedCategory.name} (ID: ${uncategorizedCategory._id})`,
-      );
     }
+
+    if (!uncategorizedCategory) {
+      throw new Error("Failed to load uncategorized category");
+    }
+
+    console.log(
+      `✅ Using category: ${uncategorizedCategory.name} (ID: ${uncategorizedCategory._id})`,
+    );
 
     const categoryId = uncategorizedCategory._id;
 
