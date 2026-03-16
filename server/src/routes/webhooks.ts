@@ -7,6 +7,7 @@ import { RewardsSettings } from "../models/RewardsSettings.js";
 import { RewardLog } from "../models/RewardLog.js";
 import { Discount } from "../models/Discount.js";
 import { processRefundReversals } from "../lib/order-refund.js";
+import { logOrderStatusChange } from "../lib/order-status-log.js";
 import { sendOrderEmailsOnce } from "../services/email.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -59,11 +60,19 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         order &&
         (order.status === "pending" || order.status === "processing")
       ) {
+        const statusBefore = order.status;
         order.status = "processing";
         (order as any).paymentStatus = "paid";
         if (session.payment_intent)
           order.stripePaymentIntentId = String(session.payment_intent);
         await order.save();
+
+        await logOrderStatusChange({
+          orderId: order._id,
+          statusBefore,
+          statusAfter: order.status,
+          reason: "stripe_payment_received",
+        });
 
         const userId = order.user?.toString();
         const pointsApplied = order.pointsApplied ?? 0;
@@ -151,10 +160,17 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         stripePaymentIntentId: paymentIntentId,
       })) as IOrder | null;
       if (order && order.status !== "refunded") {
+        const statusBefore = order.status;
         await Order.updateOne(
           { _id: order._id },
           { $set: { status: "refunded", paymentStatus: "refunded" } },
         );
+        await logOrderStatusChange({
+          orderId: order._id,
+          statusBefore,
+          statusAfter: "refunded",
+          reason: "stripe_refund",
+        });
         await processRefundReversals(order);
       }
     }

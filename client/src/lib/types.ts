@@ -203,6 +203,21 @@ export interface AdminOrderLineItem {
   price: number; // cents
 }
 
+export interface AdminOrderStatusHistoryEntry {
+  _id: string;
+  statusBefore: string;
+  statusAfter: string;
+  reason: string;
+  notes?: string;
+  performedBy?: {
+    _id: string;
+    name?: string;
+    email?: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminOrder {
   _id: string;
   orderNumber?: string;
@@ -211,6 +226,14 @@ export interface AdminOrder {
   cartSessionId?: string;
   lineItems: AdminOrderLineItem[];
   shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  billingAddress?: {
     line1: string;
     line2?: string;
     city: string;
@@ -237,6 +260,7 @@ export interface AdminOrder {
   geoCountry?: string;
   geoRegion?: string;
   geoCity?: string;
+  statusHistory?: AdminOrderStatusHistoryEntry[];
   createdAt: string;
   updatedAt: string;
 }

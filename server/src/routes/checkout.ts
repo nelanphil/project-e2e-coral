@@ -7,7 +7,10 @@ import { User } from "../models/User.js";
 import { optionalAuth, type AuthRequest } from "../middleware/auth.js";
 import { getFloridaTaxRate } from "../services/florida-tax.js";
 import * as shipping from "../services/shipping.js";
-import { ShippingSettings } from "../models/ShippingSettings.js";
+import {
+  ShippingSettings,
+  type IShippingSettings,
+} from "../models/ShippingSettings.js";
 import { RewardsSettings } from "../models/RewardsSettings.js";
 import { Discount, type IDiscount } from "../models/Discount.js";
 import { validatePostalCodeMatchesState } from "../lib/address-validation.js";
@@ -54,6 +57,27 @@ function getUserAgent(req: {
   return typeof ua === "string" ? ua : undefined;
 }
 
+type CheckoutAddress = {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
+
+function hasRequiredAddressFields(
+  address?: Partial<CheckoutAddress> | null,
+): address is CheckoutAddress {
+  return !!(
+    address?.line1 &&
+    address.city &&
+    address.state &&
+    address.postalCode &&
+    address.country
+  );
+}
+
 export const checkoutRouter = Router();
 
 /** POST /api/checkout/tax-estimate - Get Florida tax estimate for address + subtotal */
@@ -82,22 +106,9 @@ checkoutRouter.post("/shipping-rates", async (req, res) => {
     return;
   }
   const { shippingAddress } = req.body as {
-    shippingAddress?: {
-      line1: string;
-      line2?: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
+    shippingAddress?: CheckoutAddress;
   };
-  if (
-    !shippingAddress?.line1 ||
-    !shippingAddress.city ||
-    !shippingAddress.state ||
-    !shippingAddress.postalCode ||
-    !shippingAddress.country
-  ) {
+  if (!hasRequiredAddressFields(shippingAddress)) {
     res.status(400).json({ error: "Valid shipping address required" });
     return;
   }
@@ -115,7 +126,8 @@ checkoutRouter.post("/shipping-rates", async (req, res) => {
   }
 
   const state = shippingAddress.state?.toUpperCase().trim();
-  const flatSettings = await ShippingSettings.findOne().lean();
+  const flatSettings =
+    await ShippingSettings.findOne().lean<IShippingSettings | null>();
 
   if (flatSettings) {
     const floridaCents = flatSettings.shippingAmountFlorida ?? 0;
@@ -166,6 +178,7 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
     successUrl,
     cancelUrl,
     shippingAddress,
+    billingAddress,
     shippingAmount,
     email,
     pointsToApply,
@@ -174,27 +187,15 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
     paymentMethod?: "stripe" | "paypal";
     successUrl?: string;
     cancelUrl?: string;
-    shippingAddress?: {
-      line1: string;
-      line2?: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    };
+    shippingAddress?: CheckoutAddress;
+    billingAddress?: CheckoutAddress;
     shippingAmount?: number;
     email?: string;
     pointsToApply?: number;
     discountCode?: string;
   };
 
-  if (
-    !shippingAddress?.line1 ||
-    !shippingAddress.city ||
-    !shippingAddress.state ||
-    !shippingAddress.postalCode ||
-    !shippingAddress.country
-  ) {
+  if (!hasRequiredAddressFields(shippingAddress)) {
     res.status(400).json({ error: "Valid shipping address required" });
     return;
   }
@@ -209,6 +210,27 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
       error: addressValidation.message ?? "Postal code does not match state",
     });
     return;
+  }
+
+  if (billingAddress) {
+    if (!hasRequiredAddressFields(billingAddress)) {
+      res.status(400).json({ error: "Valid billing address required" });
+      return;
+    }
+
+    const billingAddressValidation = validatePostalCodeMatchesState(
+      billingAddress.postalCode,
+      billingAddress.state,
+      billingAddress.country,
+    );
+    if (!billingAddressValidation.valid) {
+      res.status(400).json({
+        error:
+          billingAddressValidation.message ??
+          "Billing postal code does not match state",
+      });
+      return;
+    }
   }
 
   const cart = await Cart.findOne({ sessionId }).populate("items.product");
@@ -591,6 +613,7 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
     const update: Record<string, unknown> = {
       lineItems,
       shippingAddress,
+      ...(billingAddress ? { billingAddress } : {}),
       ...visitorMeta,
     };
     if (userId) update.user = userId;
@@ -624,6 +647,7 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
       cartSessionId: sessionId,
       lineItems,
       shippingAddress,
+      ...(billingAddress ? { billingAddress } : {}),
       status: "pending",
       paymentStatus: "unpaid",
       ...(taxAmount > 0 ? { taxAmount } : {}),

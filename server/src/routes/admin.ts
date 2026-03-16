@@ -13,8 +13,10 @@ import { PriceLog } from "../models/PriceLog.js";
 import { ShippingSettings } from "../models/ShippingSettings.js";
 import { RewardsSettings } from "../models/RewardsSettings.js";
 import { RewardLog } from "../models/RewardLog.js";
+import { OrderStatusLog } from "../models/OrderStatusLog.js";
 import { User } from "../models/User.js";
 import { processRefundReversals } from "../lib/order-refund.js";
+import { logOrderStatusChange } from "../lib/order-status-log.js";
 import { verifyStripePayment } from "./orders.js";
 
 import { Discount } from "../models/Discount.js";
@@ -26,6 +28,25 @@ const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 export const adminRouter = Router();
 
 adminRouter.use(requireAdmin);
+
+async function buildAdminOrderResponse(orderId: string) {
+  const order = await Order.findById(orderId)
+    .populate("user", "name email role")
+    .populate("lineItems.product", "name slug images price")
+    .lean();
+
+  if (!order) return null;
+
+  const statusHistory = await OrderStatusLog.find({ order: orderId })
+    .sort({ createdAt: 1 })
+    .populate("performedBy", "name email")
+    .lean();
+
+  return {
+    ...order,
+    statusHistory,
+  };
+}
 
 type ActivityTab = "paid" | "cart" | "checkedOut";
 
@@ -372,10 +393,7 @@ adminRouter.get("/orders/:id", async (req, res) => {
     // Verify payment status with Stripe before returning order data
     await verifyStripePayment(req.params.id);
 
-    const order = await Order.findById(req.params.id)
-      .populate("user", "name email role")
-      .populate("lineItems.product", "name slug images price")
-      .lean();
+    const order = await buildAdminOrderResponse(req.params.id);
     if (!order) {
       res.status(404).json({ error: "Order not found" });
       return;
@@ -389,6 +407,7 @@ adminRouter.get("/orders/:id", async (req, res) => {
 adminRouter.patch("/orders/:id/status", async (req, res) => {
   try {
     const { status } = req.body as { status?: string };
+    const performedBy = (req as AuthRequest).userId;
     const validStatuses = [
       "pending",
       "processing",
@@ -404,18 +423,39 @@ adminRouter.patch("/orders/:id/status", async (req, res) => {
         .json({ error: `status must be one of: ${validStatuses.join(", ")}` });
       return;
     }
-    const order = await Order.findByIdAndUpdate(
+
+    const existingOrder = (await Order.findById(req.params.id)
+      .select("status")
+      .lean()) as { status?: string } | null;
+    if (!existingOrder) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    const updatedOrder = (await Order.findByIdAndUpdate(
       req.params.id,
       { $set: { status } },
       { new: true },
-    )
-      .populate("user", "name email role")
-      .populate("lineItems.product", "name slug images price")
-      .lean();
+    ).lean()) as { status?: string } | null;
+    if (!updatedOrder) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    await logOrderStatusChange({
+      orderId: req.params.id,
+      statusBefore: existingOrder.status,
+      statusAfter: updatedOrder.status,
+      reason: "admin_change",
+      performedBy,
+    });
+
+    const order = await buildAdminOrderResponse(req.params.id);
     if (!order) {
       res.status(404).json({ error: "Order not found" });
       return;
     }
+
     res.json({ order });
   } catch {
     res.status(500).json({ error: "Failed to update order status" });
@@ -425,18 +465,22 @@ adminRouter.patch("/orders/:id/status", async (req, res) => {
 adminRouter.patch("/orders/:id/tracking", async (req, res) => {
   try {
     const { trackingNumber } = req.body as { trackingNumber?: string };
-    const order = await Order.findByIdAndUpdate(
+    const updatedOrder = await Order.findByIdAndUpdate(
       req.params.id,
       { $set: { trackingNumber: trackingNumber?.trim() || null } },
       { new: true },
-    )
-      .populate("user", "name email role")
-      .populate("lineItems.product", "name slug images price")
-      .lean();
+    ).lean();
+    if (!updatedOrder) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    const order = await buildAdminOrderResponse(req.params.id);
     if (!order) {
       res.status(404).json({ error: "Order not found" });
       return;
     }
+
     res.json({ order });
   } catch {
     res.status(500).json({ error: "Failed to update tracking" });
@@ -445,6 +489,7 @@ adminRouter.patch("/orders/:id/tracking", async (req, res) => {
 
 adminRouter.post("/orders/:id/refund", async (req, res) => {
   try {
+    const performedBy = (req as AuthRequest).userId;
     const order = (await Order.findById(req.params.id)) as IOrder | null;
     if (!order) {
       res.status(404).json({ error: "Order not found" });
@@ -477,13 +522,18 @@ adminRouter.post("/orders/:id/refund", async (req, res) => {
       { $set: { status: "refunded", paymentStatus: "refunded" } },
     );
 
+    await logOrderStatusChange({
+      orderId: order._id,
+      statusBefore: order.status,
+      statusAfter: "refunded",
+      reason: "admin_refund",
+      performedBy,
+    });
+
     // Process all reversals (rewards + inventory)
     await processRefundReversals(order);
 
-    const updated = await Order.findById(req.params.id)
-      .populate("user", "name email role")
-      .populate("lineItems.product", "name slug images price")
-      .lean();
+    const updated = await buildAdminOrderResponse(req.params.id);
 
     res.json({ order: updated, message: "Refund processed successfully" });
   } catch (err) {

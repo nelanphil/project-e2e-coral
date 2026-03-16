@@ -178,14 +178,22 @@ export default function CheckoutPage() {
   const taxFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shippingFetchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced email existence check for guest checkout
-  useEffect(() => {
-    if (user || !isValidEmail(email)) {
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (user || !isValidEmail(value)) {
       setEmailExists(false);
       setEmailCheckLoading(false);
       return;
     }
+    setEmailExists(false);
     setEmailCheckLoading(true);
+  };
+
+  // Debounced email existence check for guest checkout
+  useEffect(() => {
+    if (user || !isValidEmail(email)) {
+      return;
+    }
     const t = setTimeout(async () => {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
@@ -541,6 +549,7 @@ export default function CheckoutPage() {
           successUrl,
           cancelUrl,
           shippingAddress: shipping,
+          billingAddress,
           shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
           email: user ? undefined : email,
           pointsToApply: pointsToApply > 0 ? pointsToApply : undefined,
@@ -615,7 +624,7 @@ export default function CheckoutPage() {
                           type="email"
                           className={`input input-bordered w-full ${emailExists ? "input-error" : ""}`}
                           value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          onChange={(e) => handleEmailChange(e.target.value)}
                           placeholder="you@example.com"
                           required
                         />

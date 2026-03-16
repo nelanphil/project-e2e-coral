@@ -14,12 +14,11 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const orderId = params.id as string;
   const [order, setOrder] = useState<OrderConfirmation | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(params.id));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!orderId) {
-      setLoading(false);
       return;
     }
     const token = getAuthToken();

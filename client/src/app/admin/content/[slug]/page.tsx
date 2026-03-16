@@ -167,11 +167,11 @@ export default function AdminContentSlugPage() {
     setError("");
     setSaved(false);
     try {
-      const payload = sections.map(({ _clientId, ...s }) => ({
-        key: s.key.trim() || s.key,
-        label: s.label.trim() || s.label,
-        content: s.content,
-        hidden: s.hidden,
+      const payload = sections.map((section) => ({
+        key: section.key.trim() || section.key,
+        label: section.label.trim() || section.label,
+        content: section.content,
+        hidden: section.hidden,
       }));
       const res = await api(`/api/pages/${slug}`, {
         method: "PUT",
@@ -241,7 +241,7 @@ export default function AdminContentSlugPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {visible.map((section, index) => {
+          {visible.map((section) => {
             const globalIndex = sections.findIndex((s) => s === section);
             const isCustom = !defKeys.has(section.key);
             return (
@@ -307,7 +307,7 @@ export default function AdminContentSlugPage() {
               </button>
               {hiddenOpen && (
                 <div className="p-4 space-y-2 border-t border-base-300">
-                  {hidden.map((section, i) => {
+                  {hidden.map((section) => {
                     const globalIndex = sections.findIndex((s) => s === section);
                     return (
                       <div

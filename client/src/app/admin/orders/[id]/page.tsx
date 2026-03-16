@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -12,6 +12,8 @@ import {
   Globe,
   AlertTriangle,
   Truck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import type { AdminOrder } from "@/lib/types";
@@ -44,9 +46,64 @@ function getPaymentBadge(paymentStatus?: string) {
   return map[paymentStatus ?? ""] ?? "badge-ghost";
 }
 
+function formatStatusLabel(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function formatStatusReason(reason: string) {
+  const map: Record<string, string> = {
+    admin_change: "Changed by admin",
+    admin_refund: "Refunded by admin",
+    stripe_payment_received: "Stripe payment received",
+    stripe_refund: "Stripe refund event",
+    payment_verified: "Payment verified",
+    shipping_label_created: "Shipping label created",
+    system: "System update",
+  };
+
+  if (map[reason]) return map[reason];
+  const normalized = reason.replace(/_/g, " ");
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+function maskSensitiveValue(value: string) {
+  return "*".repeat(Math.max(value.length, 5));
+}
+
+type OrderAddress = AdminOrder["shippingAddress"];
+
+function normalizeAddressValue(value?: string) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function addressesMatch(a?: OrderAddress, b?: OrderAddress) {
+  if (!a || !b) return false;
+
+  return (
+    normalizeAddressValue(a.line1) === normalizeAddressValue(b.line1) &&
+    normalizeAddressValue(a.line2) === normalizeAddressValue(b.line2) &&
+    normalizeAddressValue(a.city) === normalizeAddressValue(b.city) &&
+    normalizeAddressValue(a.state) === normalizeAddressValue(b.state) &&
+    normalizeAddressValue(a.postalCode) === normalizeAddressValue(b.postalCode) &&
+    normalizeAddressValue(a.country) === normalizeAddressValue(b.country)
+  );
+}
+
+function AddressLines({ address }: { address: OrderAddress }) {
+  return (
+    <div className="text-sm space-y-0.5">
+      <div>{address.line1}</div>
+      {address.line2 && <div>{address.line2}</div>}
+      <div>
+        {address.city}, {address.state} {address.postalCode}
+      </div>
+      <div>{address.country}</div>
+    </div>
+  );
+}
+
 export default function AdminOrderDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const orderId = params.id as string;
 
   const [order, setOrder] = useState<AdminOrder | null>(null);
@@ -56,6 +113,9 @@ export default function AdminOrderDetailPage() {
   const [trackingInput, setTrackingInput] = useState("");
   const [refunding, setRefunding] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [visiblePaymentFields, setVisiblePaymentFields] = useState<
+    Partial<Record<"stripePi" | "stripeSession" | "paypal", boolean>>
+  >({});
   const [error, setError] = useState("");
 
   const fetchOrder = useCallback(async () => {
@@ -165,6 +225,15 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const togglePaymentFieldVisibility = (
+    field: "stripePi" | "stripeSession" | "paypal",
+  ) => {
+    setVisiblePaymentFields((current) => ({
+      ...current,
+      [field]: !current[field],
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -207,6 +276,13 @@ export default function AdminOrderDetailPage() {
     order.status !== "refunded" &&
     order.paymentStatus !== "refunded" &&
     !!order.stripePaymentIntentId;
+  const billingAddress = order.billingAddress;
+  const showBillingAddress =
+    !!billingAddress && !addressesMatch(order.shippingAddress, billingAddress);
+  const detailCardsGridClass = showBillingAddress
+    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+    : "grid grid-cols-1 md:grid-cols-2 gap-4";
+  const statusHistory = order.statusHistory ?? [];
 
   return (
     <div className="space-y-4">
@@ -249,26 +325,56 @@ export default function AdminOrderDetailPage() {
                 })}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              {/* Status update dropdown */}
-              <select
-                className="select select-bordered select-sm"
-                value={order.status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                disabled={statusUpdating || order.status === "refunded"}>
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="paid">Paid</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="refunded" disabled>
-                  Refunded
-                </option>
-              </select>
-              <span className={`badge ${getStatusBadge(order.status)}`}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </span>
+            <div className="flex min-w-0 flex-col gap-3 sm:items-end">
+              {canRefund &&
+                (!showRefundConfirm ? (
+                  <button
+                    type="button"
+                    className="btn btn-error btn-sm sm:self-end"
+                    onClick={() => setShowRefundConfirm(true)}
+                    disabled={refunding}>
+                    Refund Order
+                  </button>
+                ) : (
+                  <div className="w-full max-w-xl rounded-box border border-warning/30 bg-base-200 p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 text-warning">
+                        <AlertTriangle className="size-5 shrink-0 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-semibold">
+                            Are you sure you want to issue a full refund?
+                          </p>
+                          <p className="text-base-content/60 mt-1">
+                            This will refund {formatCents(total)} to the customer
+                            via Stripe, reverse any earned reward points, return
+                            spent points, and restore inventory. This action
+                            cannot be undone.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 sm:justify-end">
+                        <button
+                          type="button"
+                          className="btn btn-error btn-sm"
+                          onClick={handleRefund}
+                          disabled={refunding}>
+                          {refunding ? (
+                            <span className="loading loading-spinner loading-xs" />
+                          ) : (
+                            "Confirm Refund"
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => setShowRefundConfirm(false)}
+                          disabled={refunding}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -377,9 +483,60 @@ export default function AdminOrderDetailPage() {
               </div>
             </div>
           </div>
+
+          <div className={detailCardsGridClass}>
+            <div className="card bg-base-100 shadow">
+              <div className="card-body">
+                <h2 className="card-title text-lg">
+                  <MapPin className="size-5" /> Shipping Address
+                </h2>
+                <AddressLines address={order.shippingAddress} />
+              </div>
+            </div>
+
+            {showBillingAddress && billingAddress && (
+              <div className="card bg-base-100 shadow">
+                <div className="card-body">
+                  <h2 className="card-title text-lg">
+                    <MapPin className="size-5" /> Billing Address
+                  </h2>
+                  <AddressLines address={billingAddress} />
+                </div>
+              </div>
+            )}
+
+            <div className="card bg-base-100 shadow">
+              <div className="card-body">
+                <h2 className="card-title text-lg">
+                  <Truck className="size-5" /> Tracking
+                </h2>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Enter tracking ID"
+                    className="input input-bordered input-sm w-full font-mono"
+                    value={trackingInput}
+                    onChange={(e) => setTrackingInput(e.target.value)}
+                    disabled={trackingUpdating}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleTrackingSave}
+                    disabled={trackingUpdating}>
+                    {trackingUpdating ? (
+                      <span className="loading loading-spinner loading-xs" />
+                    ) : (
+                      "Save Tracking"
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Right column: Customer, Shipping, Payment, Tracking, Refund */}
+        {/* Right column: Customer, Payment, Visitor Metadata */}
         <div className="space-y-4">
           {/* Customer */}
           <div className="card bg-base-100 shadow">
@@ -399,22 +556,83 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
 
-          {/* Shipping Address */}
+          {/* Status */}
           <div className="card bg-base-100 shadow">
             <div className="card-body">
-              <h2 className="card-title text-lg">
-                <MapPin className="size-5" /> Shipping Address
-              </h2>
-              <div className="text-sm space-y-0.5">
-                <div>{order.shippingAddress.line1}</div>
-                {order.shippingAddress.line2 && (
-                  <div>{order.shippingAddress.line2}</div>
-                )}
-                <div>
-                  {order.shippingAddress.city}, {order.shippingAddress.state}{" "}
-                  {order.shippingAddress.postalCode}
+              <h2 className="card-title text-lg">Status</h2>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      className="select select-bordered select-sm"
+                      value={order.status}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      disabled={statusUpdating || order.status === "refunded"}>
+                      <option value="pending">Pending</option>
+                      <option value="processing">Processing</option>
+                      {order.status === "paid" && (
+                        <option value="paid" hidden>
+                          Paid
+                        </option>
+                      )}
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="refunded" disabled>
+                        Refunded
+                      </option>
+                    </select>
+                    <span className={`badge ${getStatusBadge(order.status)}`}>
+                      {formatStatusLabel(order.status)}
+                    </span>
+                  </div>
+                  {statusUpdating && (
+                    <div className="text-xs text-base-content/60">Updating status...</div>
+                  )}
                 </div>
-                <div>{order.shippingAddress.country}</div>
+
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-base-content/60 mb-2">
+                    History
+                  </div>
+                  {statusHistory.length === 0 ? (
+                    <p className="text-sm text-base-content/60">
+                      No status changes recorded yet.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {statusHistory.map((entry) => (
+                        <li
+                          key={entry._id}
+                          className="rounded-box border border-base-300 p-2">
+                          <div className="flex items-center justify-between gap-2 text-xs text-base-content/60">
+                            <span>
+                              {new Date(entry.createdAt).toLocaleString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span className="font-medium">
+                              {entry.performedBy?.name ||
+                                entry.performedBy?.email ||
+                                "System"}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-sm font-medium">
+                            {formatStatusLabel(entry.statusBefore)} to{" "}
+                            {formatStatusLabel(entry.statusAfter)}
+                          </div>
+                          <div className="text-xs text-base-content/60 mt-1">
+                            {formatStatusReason(entry.reason)}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -435,62 +653,93 @@ export default function AdminOrderDetailPage() {
                   </span>
                 </div>
                 {order.stripePaymentIntentId && (
-                  <div>
+                  <div className="flex items-start justify-between gap-3">
                     <span className="text-base-content/60">Stripe PI: </span>
-                    <span className="font-mono text-xs break-all">
-                      {order.stripePaymentIntentId}
-                    </span>
+                    <div className="flex items-start gap-2">
+                      <span className="font-mono text-xs break-all text-right">
+                        {visiblePaymentFields.stripePi
+                        ? order.stripePaymentIntentId
+                        : maskSensitiveValue(order.stripePaymentIntentId)}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs btn-square shrink-0"
+                        onClick={() => togglePaymentFieldVisibility("stripePi")}
+                        aria-pressed={!!visiblePaymentFields.stripePi}
+                        aria-label={
+                          visiblePaymentFields.stripePi
+                            ? "Hide Stripe payment intent ID"
+                            : "Show Stripe payment intent ID"
+                        }>
+                        {visiblePaymentFields.stripePi ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
                 {order.stripeCheckoutSessionId && (
-                  <div>
+                  <div className="flex items-start justify-between gap-3">
                     <span className="text-base-content/60">
                       Stripe Session:{" "}
                     </span>
-                    <span className="font-mono text-xs break-all">
-                      {order.stripeCheckoutSessionId}
-                    </span>
+                    <div className="flex items-start gap-2">
+                      <span className="font-mono text-xs break-all text-right">
+                        {visiblePaymentFields.stripeSession
+                        ? order.stripeCheckoutSessionId
+                        : maskSensitiveValue(order.stripeCheckoutSessionId)}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs btn-square shrink-0"
+                        onClick={() =>
+                          togglePaymentFieldVisibility("stripeSession")
+                        }
+                        aria-pressed={!!visiblePaymentFields.stripeSession}
+                        aria-label={
+                          visiblePaymentFields.stripeSession
+                            ? "Hide Stripe checkout session ID"
+                            : "Show Stripe checkout session ID"
+                        }>
+                        {visiblePaymentFields.stripeSession ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
                 {order.paypalOrderId && (
-                  <div>
+                  <div className="flex items-start justify-between gap-3">
                     <span className="text-base-content/60">PayPal: </span>
-                    <span className="font-mono text-xs break-all">
-                      {order.paypalOrderId}
-                    </span>
+                    <div className="flex items-start gap-2">
+                      <span className="font-mono text-xs break-all text-right">
+                        {visiblePaymentFields.paypal
+                        ? order.paypalOrderId
+                        : maskSensitiveValue(order.paypalOrderId)}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs btn-square shrink-0"
+                        onClick={() => togglePaymentFieldVisibility("paypal")}
+                        aria-pressed={!!visiblePaymentFields.paypal}
+                        aria-label={
+                          visiblePaymentFields.paypal
+                            ? "Hide PayPal order ID"
+                            : "Show PayPal order ID"
+                        }>
+                        {visiblePaymentFields.paypal ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-
-          {/* Tracking */}
-          <div className="card bg-base-100 shadow">
-            <div className="card-body">
-              <h2 className="card-title text-lg">
-                <Truck className="size-5" /> Tracking
-              </h2>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Enter tracking ID"
-                  className="input input-bordered input-sm w-full font-mono"
-                  value={trackingInput}
-                  onChange={(e) => setTrackingInput(e.target.value)}
-                  disabled={trackingUpdating}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={handleTrackingSave}
-                  disabled={trackingUpdating}
-                >
-                  {trackingUpdating ? (
-                    <span className="loading loading-spinner loading-xs" />
-                  ) : (
-                    "Save Tracking"
-                  )}
-                </button>
               </div>
             </div>
           </div>
@@ -527,60 +776,6 @@ export default function AdminOrderDetailPage() {
                   <div>
                     <span className="text-base-content/60">Referer: </span>
                     <span className="text-xs break-all">{order.referer}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Refund Button */}
-          {canRefund && (
-            <div className="card bg-base-100 shadow">
-              <div className="card-body">
-                {!showRefundConfirm ? (
-                  <button
-                    type="button"
-                    className="btn btn-error btn-sm w-full"
-                    onClick={() => setShowRefundConfirm(true)}
-                    disabled={refunding}>
-                    Refund Order
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2 text-warning">
-                      <AlertTriangle className="size-5 shrink-0 mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-semibold">
-                          Are you sure you want to issue a full refund?
-                        </p>
-                        <p className="text-base-content/60 mt-1">
-                          This will refund {formatCents(total)} to the customer
-                          via Stripe, reverse any earned reward points, return
-                          spent points, and restore inventory. This action
-                          cannot be undone.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-error btn-sm flex-1"
-                        onClick={handleRefund}
-                        disabled={refunding}>
-                        {refunding ? (
-                          <span className="loading loading-spinner loading-xs" />
-                        ) : (
-                          "Confirm Refund"
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm flex-1"
-                        onClick={() => setShowRefundConfirm(false)}
-                        disabled={refunding}>
-                        Cancel
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>

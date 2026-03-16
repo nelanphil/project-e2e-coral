@@ -34,7 +34,9 @@ export function TickerBanner() {
   }, []);
 
   useEffect(() => {
-    fetchTicker();
+    const initialFetchId = window.setTimeout(() => {
+      void fetchTicker();
+    }, 0);
 
     const pollId = setInterval(fetchTicker, POLL_INTERVAL_MS);
 
@@ -52,6 +54,7 @@ export function TickerBanner() {
     }
 
     return () => {
+      window.clearTimeout(initialFetchId);
       clearInterval(pollId);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       channel?.close();

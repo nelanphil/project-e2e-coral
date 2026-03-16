@@ -120,7 +120,10 @@ export default function AdminDiscountsPage() {
   }, [page]);
 
   useEffect(() => {
-    fetchDiscounts();
+    const timeoutId = window.setTimeout(() => {
+      void fetchDiscounts();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [fetchDiscounts]);
 
   /* ── Client-side filtering ──────────────────────────────────────────────── */

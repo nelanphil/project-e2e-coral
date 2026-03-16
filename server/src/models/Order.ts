@@ -23,6 +23,7 @@ export interface IOrder {
   cartSessionId?: string;
   lineItems: IOrderLineItem[];
   shippingAddress: IShippingAddress;
+  billingAddress?: IShippingAddress;
   status:
     | "pending"
     | "processing"
@@ -84,6 +85,7 @@ const orderSchema = new Schema<IOrder>(
     cartSessionId: { type: String },
     lineItems: [lineItemSchema],
     shippingAddress: { type: shippingAddressSchema, required: true },
+    billingAddress: { type: shippingAddressSchema },
     status: {
       type: String,
       enum: [

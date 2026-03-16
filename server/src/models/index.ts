@@ -22,6 +22,12 @@ export { RewardsSettings } from "./RewardsSettings.js";
 export type { IRewardsSettings } from "./RewardsSettings.js";
 export { RewardLog } from "./RewardLog.js";
 export type { IRewardLog } from "./RewardLog.js";
+export { OrderStatusLog } from "./OrderStatusLog.js";
+export type {
+	IOrderStatusLog,
+	OrderStatusChangeReason,
+	OrderStatusValue,
+} from "./OrderStatusLog.js";
 export { Discount } from "./Discount.js";
 export type { IDiscount, IDiscountUsageEntry } from "./Discount.js";
 export { TickerItem } from "./TickerItem.js";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
@@ -27,7 +27,7 @@ const api = (path: string, options?: RequestInit) => {
   });
 };
 
-export default function EditProductPage() {
+function EditProductContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -144,6 +144,10 @@ export default function EditProductPage() {
               p.attributes && typeof p.attributes === "object"
                 ? p.attributes
                 : {},
+            inventoryReason: "manual",
+            inventoryNotes: "",
+            priceReason: "correction",
+            priceNotes: "",
           });
         }
       })
@@ -816,5 +820,13 @@ export default function EditProductPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function EditProductPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><span className="loading loading-spinner loading-lg" /></div>}>
+      <EditProductContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
@@ -14,7 +14,7 @@ const api = (path: string) => {
   });
 };
 
-export default function InventoryLogPage() {
+function InventoryLogContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const productId = params.productId as string;
@@ -158,5 +158,13 @@ export default function InventoryLogPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function InventoryLogPage() {
+  return (
+    <Suspense fallback={<p>Loading…</p>}>
+      <InventoryLogContent />
+    </Suspense>
   );
 }

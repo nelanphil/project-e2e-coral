@@ -8,6 +8,7 @@ import {
 } from "../middleware/auth.js";
 import type { IOrder } from "../models/Order.js";
 import { Order } from "../models/Order.js";
+import { logOrderStatusChange } from "../lib/order-status-log.js";
 import { sendOrderEmailsOnce } from "../services/email.js";
 import * as shipping from "../services/shipping.js";
 
@@ -32,12 +33,19 @@ export async function verifyStripePayment(orderId: string): Promise<boolean> {
       order.stripeCheckoutSessionId,
     );
     if (session.payment_status === "paid") {
+      const statusBefore = order.status;
       order.status = order.status === "pending" ? "processing" : order.status;
       (order as any).paymentStatus = "paid";
       if (session.payment_intent) {
         order.stripePaymentIntentId = String(session.payment_intent);
       }
       await order.save();
+      await logOrderStatusChange({
+        orderId,
+        statusBefore,
+        statusAfter: order.status,
+        reason: "payment_verified",
+      });
       return true;
     }
   } catch (err) {
@@ -107,6 +115,7 @@ ordersRouter.get("/:id/rates", requireAuth, requireAdmin, async (req, res) => {
 
 ordersRouter.post("/:id/ship", requireAuth, requireAdmin, async (req, res) => {
   const { rateId } = req.body as { rateId?: string };
+  const performedBy = (req as AuthRequest).userId;
   if (!rateId) {
     res.status(400).json({ error: "rateId required" });
     return;
@@ -128,6 +137,13 @@ ordersRouter.post("/:id/ship", requireAuth, requireAdmin, async (req, res) => {
     { _id: req.params.id },
     { trackingNumber: result.trackingNumber, status: "shipped" },
   );
+  await logOrderStatusChange({
+    orderId: req.params.id,
+    statusBefore: order.status,
+    statusAfter: "shipped",
+    reason: "shipping_label_created",
+    performedBy,
+  });
   res.json({
     trackingNumber: result.trackingNumber,
     labelUrl: result.labelUrl,

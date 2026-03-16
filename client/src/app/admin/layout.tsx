@@ -105,7 +105,7 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
-              <details open>
+              <details>
                 <summary>
                   <Link href="/admin/products" onClick={closeSidebar}>
                     Products

@@ -16,7 +16,7 @@ export default function AdminContentPage() {
       <div>
         <h1 className="text-2xl font-bold">Content Editor</h1>
         <p className="text-base-content/60 text-sm mt-1">
-          Edit the content of your store's information pages.
+          Edit the content of your store&apos;s information pages.
         </p>
       </div>
 
