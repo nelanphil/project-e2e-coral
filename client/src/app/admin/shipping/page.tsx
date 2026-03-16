@@ -109,7 +109,7 @@ export default function AdminShippingPage() {
 
       <div className="card bg-base-100 shadow">
         <div className="card-body">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-8 max-w-xl">
             {message && (
               <div
                 className={`alert ${message.type === "success" ? "alert-success" : "alert-error"}`}>
@@ -117,85 +117,116 @@ export default function AdminShippingPage() {
               </div>
             )}
 
-            <div className="form-control">
-              <label className="label" htmlFor="shipping-florida">
-                <span className="label-text font-medium">
-                  Shipping for Florida
-                </span>
-                <span className="label-text-alt">Amount in USD</span>
-              </label>
-              <input
-                id="shipping-florida"
-                type="number"
-                min="0"
-                step="0.01"
-                className="input input-bordered w-full max-w-xs"
-                value={shippingAmountFlorida}
-                onChange={(e) => setShippingAmountFlorida(e.target.value)}
-                placeholder="0.00"
-              />
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">
-                  Flat rate for orders shipping to Florida addresses.
-                </span>
-              </label>
+            {/* Flat Shipping Rates */}
+            <div className="space-y-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+                Flat shipping rates
+              </h3>
+
+              <div className="space-y-4">
+                <div className="form-control">
+                  <label
+                    className="label py-0 mb-1"
+                    htmlFor="shipping-florida">
+                    <span className="label-text font-medium">
+                      Shipping for Florida
+                    </span>
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base-content/60">$</span>
+                      <input
+                        id="shipping-florida"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input input-bordered w-28"
+                        value={shippingAmountFlorida}
+                        onChange={(e) =>
+                          setShippingAmountFlorida(e.target.value)
+                        }
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <span className="text-sm text-base-content/60">
+                      Flat rate for orders shipping to Florida addresses.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="form-control">
+                  <label className="label py-0 mb-1" htmlFor="shipping-other">
+                    <span className="label-text font-medium">
+                      Shipping for other states
+                    </span>
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base-content/60">$</span>
+                      <input
+                        id="shipping-other"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        className="input input-bordered w-28"
+                        value={shippingAmountOther}
+                        onChange={(e) =>
+                          setShippingAmountOther(e.target.value)
+                        }
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <span className="text-sm text-base-content/60">
+                      Flat rate for orders shipping to all states outside
+                      Florida.
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="form-control">
-              <label className="label" htmlFor="shipping-other">
-                <span className="label-text font-medium">
-                  Shipping for other states
-                </span>
-                <span className="label-text-alt">Amount in USD</span>
-              </label>
-              <input
-                id="shipping-other"
-                type="number"
-                min="0"
-                step="0.01"
-                className="input input-bordered w-full max-w-xs"
-                value={shippingAmountOther}
-                onChange={(e) => setShippingAmountOther(e.target.value)}
-                placeholder="0.00"
-              />
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">
-                  Flat rate for orders shipping to all states outside Florida.
-                </span>
-              </label>
+            {/* Free Shipping Threshold */}
+            <div className="space-y-4 border-t border-base-300 pt-6">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+                Free shipping threshold
+              </h3>
+
+              <div className="form-control">
+                <label
+                  className="label py-0 mb-1"
+                  htmlFor="free-shipping-threshold">
+                  <span className="label-text font-medium">
+                    Free shipping on orders over
+                  </span>
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base-content/60">$</span>
+                    <input
+                      id="free-shipping-threshold"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="input input-bordered w-28"
+                      value={freeShippingThreshold}
+                      onChange={(e) =>
+                        setFreeShippingThreshold(e.target.value)
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <span className="text-sm text-base-content/60">
+                    Orders with a subtotal at or above this amount receive free
+                    shipping. Set to $0.00 to disable.
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-sm text-base-content/60">
+                Leave both at $0.00 to use live carrier rates (Shippo) when
+                configured.
+              </p>
             </div>
-
-            <div className="divider">Free Shipping Threshold</div>
-
-            <div className="form-control">
-              <label className="label" htmlFor="free-shipping-threshold">
-                <span className="label-text font-medium">
-                  Free shipping on orders over
-                </span>
-                <span className="label-text-alt">Amount in USD</span>
-              </label>
-              <input
-                id="free-shipping-threshold"
-                type="number"
-                min="0"
-                step="0.01"
-                className="input input-bordered w-full max-w-xs"
-                value={freeShippingThreshold}
-                onChange={(e) => setFreeShippingThreshold(e.target.value)}
-                placeholder="0.00"
-              />
-              <label className="label">
-                <span className="label-text-alt text-base-content/60">
-                  Orders with a subtotal at or above this amount receive free
-                  shipping. Set to $0.00 to disable.
-                </span>
-              </label>
-            </div>
-
-            <p className="text-sm text-base-content/60">
-              Leave both at $0.00 to use live carrier rates (Shippo) when
-              configured.
-            </p>
 
             <button type="submit" className="btn btn-primary" disabled={saving}>
               {saving ? "Saving…" : "Save shipping rates"}

@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { fetchApi } from "@/lib/api-server";
 import type { ProductsResponse, CategoriesResponse, CollectionsResponse } from "@/lib/types";
+import { filterDisplayCategories } from "@/lib/types";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3003";
 
@@ -25,7 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.9,
       });
     }
-    for (const c of categoriesData.categories ?? []) {
+    for (const c of filterDisplayCategories(categoriesData.categories ?? [])) {
       entries.push({
         url: `${baseUrl}/category/${c.slug}`,
         lastModified: new Date(),

@@ -7,6 +7,7 @@ import { RewardsSettings } from "../models/RewardsSettings.js";
 import { RewardLog } from "../models/RewardLog.js";
 import { Discount } from "../models/Discount.js";
 import { processRefundReversals } from "../lib/order-refund.js";
+import { sendOrderEmailsOnce } from "../services/email.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -52,6 +53,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     }
     const orderId = session.metadata?.orderId;
     if (orderId) {
+      console.log(`Stripe webhook: ${event.type} for orderId ${orderId}`);
       const order = await Order.findById(orderId);
       if (
         order &&
@@ -132,6 +134,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             },
           );
         }
+
+        sendOrderEmailsOnce(order._id.toString()).catch((err) =>
+          console.error("Order emails failed", err),
+        );
       }
     }
   } else if (event.type === "charge.refunded") {

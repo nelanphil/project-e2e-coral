@@ -90,7 +90,6 @@ const discountSchema = new Schema<IDiscount>(
   { timestamps: true },
 );
 
-discountSchema.index({ code: 1 });
 discountSchema.index({ isActive: 1, expiresAt: 1 });
 
 export const Discount =

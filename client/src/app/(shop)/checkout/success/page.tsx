@@ -113,16 +113,16 @@ export default function CheckoutSuccessPage() {
                 <span>-${(discountCents / 100).toFixed(2)}</span>
               </div>
             )}
-            {shippingCents > 0 && (
-              <div className="flex justify-between text-sm mt-1">
-                <span>Shipping</span>
-                <span>${(shippingCents / 100).toFixed(2)}</span>
-              </div>
-            )}
             {taxCents > 0 && (
               <div className="flex justify-between text-sm mt-1">
                 <span>Tax</span>
                 <span>${(taxCents / 100).toFixed(2)}</span>
+              </div>
+            )}
+            {shippingCents > 0 && (
+              <div className="flex justify-between text-sm mt-1">
+                <span>Shipping</span>
+                <span>${(shippingCents / 100).toFixed(2)}</span>
               </div>
             )}
             {pointsDiscount > 0 && (

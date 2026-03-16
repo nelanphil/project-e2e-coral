@@ -8,6 +8,7 @@ import {
 } from "../middleware/auth.js";
 import type { IOrder } from "../models/Order.js";
 import { Order } from "../models/Order.js";
+import { sendOrderEmailsOnce } from "../services/email.js";
 import * as shipping from "../services/shipping.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -16,14 +17,15 @@ const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 /**
  * Verify payment status with Stripe for orders that still appear unpaid.
  * If the Stripe checkout session shows payment was collected, update the order.
+ * Returns true if the order was updated to paid (caller may send emails).
  */
-export async function verifyStripePayment(orderId: string): Promise<void> {
-  if (!stripe) return;
+export async function verifyStripePayment(orderId: string): Promise<boolean> {
+  if (!stripe) return false;
   const order = await Order.findById(orderId);
-  if (!order) return;
+  if (!order) return false;
   if (order.paymentStatus === "paid" || order.paymentStatus === "refunded")
-    return;
-  if (!order.stripeCheckoutSessionId) return;
+    return false;
+  if (!order.stripeCheckoutSessionId) return false;
 
   try {
     const session = await stripe.checkout.sessions.retrieve(
@@ -36,10 +38,12 @@ export async function verifyStripePayment(orderId: string): Promise<void> {
         order.stripePaymentIntentId = String(session.payment_intent);
       }
       await order.save();
+      return true;
     }
   } catch (err) {
     console.error(`Failed to verify Stripe session for order ${orderId}:`, err);
   }
+  return false;
 }
 
 export const ordersRouter = Router();
@@ -54,7 +58,13 @@ ordersRouter.get("/", requireAuth, async (req, res) => {
 
 ordersRouter.get("/confirmation/:orderId", async (req, res) => {
   // Verify payment with Stripe before returning order data
-  await verifyStripePayment(req.params.orderId);
+  const wasUpdated = await verifyStripePayment(req.params.orderId);
+  // Send emails if we just verified payment (webhook may not have fired yet)
+  if (wasUpdated) {
+    sendOrderEmailsOnce(req.params.orderId).catch((err) =>
+      console.error("Order emails failed", err),
+    );
+  }
 
   const order = await Order.findById(req.params.orderId)
     .populate("lineItems.product", "name slug images")

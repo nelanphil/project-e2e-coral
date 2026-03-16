@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import type { Category } from "@/lib/types";
+import { filterDisplayCategories } from "@/lib/types";
 
 const api = (path: string, options?: RequestInit) => {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
@@ -26,7 +27,7 @@ export default function AdminCategoriesPage() {
     api("/api/categories")
       .then((r) => r.json())
       .then((d) => {
-        setCategories(d.categories ?? []);
+        setCategories(filterDisplayCategories(d.categories ?? []));
       })
       .finally(() => setLoading(false));
   }, []);

@@ -496,18 +496,54 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
     if (cookieId) {
       const ipAddress = getIpAddress(req);
       const userAgent = getUserAgent(req);
+      const normalizedEmail =
+        email && typeof email === "string" ? email.trim().toLowerCase() : undefined;
       let guestUser = await User.findOne({ cookieId, role: "guest" });
 
       if (guestUser) {
-        // Update existing guest user
-        await User.findByIdAndUpdate(guestUser._id, {
-          $inc: { visitCount: 1 },
-          lastVisit: new Date(),
-          ipAddress,
-          userAgent,
-          ...(email && typeof email === "string" ? { email } : {}),
-        });
-        userId = guestUser._id.toString();
+        // If an email is present, first see if it already belongs to another user.
+        // In that case, just associate this order with the existing user instead of
+        // trying to assign the email to the guest record (which would violate the unique index).
+        if (normalizedEmail) {
+          const existingUser = await User.findOne({ email: normalizedEmail });
+          if (existingUser && !existingUser._id.equals(guestUser._id)) {
+            userId = existingUser._id.toString();
+          }
+        }
+
+        if (!userId) {
+          // Update existing guest user (only set email when it doesn't conflict)
+          const update: Record<string, unknown> = {
+            $inc: { visitCount: 1 },
+            lastVisit: new Date(),
+            ipAddress,
+            userAgent,
+          };
+          if (normalizedEmail) {
+            update["email"] = normalizedEmail;
+          }
+
+          try {
+            await User.findByIdAndUpdate(guestUser._id, update);
+            userId = guestUser._id.toString();
+          } catch (err: unknown) {
+            if (
+              typeof err === "object" &&
+              err !== null &&
+              "code" in err &&
+              (err as { code: number }).code === 11000 &&
+              normalizedEmail
+            ) {
+              // Unique email conflict on update — fall back to the existing user with this email
+              const existingUser = await User.findOne({ email: normalizedEmail });
+              if (existingUser) {
+                userId = existingUser._id.toString();
+              }
+            } else {
+              throw err;
+            }
+          }
+        }
       } else {
         // Create new guest user
         try {
@@ -519,7 +555,7 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
             userAgent,
             visitCount: 1,
             lastVisit: new Date(),
-            ...(email && typeof email === "string" ? { email } : {}),
+            ...(normalizedEmail ? { email: normalizedEmail } : {}),
           });
           userId = guestUser._id.toString();
         } catch (err: unknown) {
@@ -527,16 +563,15 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
             typeof err === "object" &&
             err !== null &&
             "code" in err &&
-            (err as { code: number }).code === 11000
+            (err as { code: number }).code === 11000 &&
+            normalizedEmail
           ) {
             // Email already exists — look up the existing user instead
-            if (email && typeof email === "string") {
-              const existingUser = await User.findOne({
-                email: email.trim().toLowerCase(),
-              });
-              if (existingUser) {
-                userId = existingUser._id.toString();
-              }
+            const existingUser = await User.findOne({
+              email: normalizedEmail,
+            });
+            if (existingUser) {
+              userId = existingUser._id.toString();
             }
           } else {
             throw err;

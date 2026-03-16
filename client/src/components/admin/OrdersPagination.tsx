@@ -6,6 +6,7 @@ interface Props {
   total: number;
   onPageChange: (page: number) => void;
   onLimitChange: (limit: number) => void;
+  emptyMessage?: string;
 }
 
 const PAGE_SIZES = [50, 100, 150, 250];
@@ -16,6 +17,7 @@ export default function OrdersPagination({
   total,
   onPageChange,
   onLimitChange,
+  emptyMessage = "No orders found",
 }: Props) {
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const start = total === 0 ? 0 : (page - 1) * limit + 1;
@@ -43,7 +45,7 @@ export default function OrdersPagination({
       {/* Showing summary */}
       <span className="text-sm text-base-content/70">
         {total === 0
-          ? "No orders found"
+          ? emptyMessage
           : `Showing ${start} to ${end} of ${total}`}
       </span>
 

@@ -11,6 +11,7 @@ import {
   CreditCard,
   Globe,
   AlertTriangle,
+  Truck,
 } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import type { AdminOrder } from "@/lib/types";
@@ -51,6 +52,8 @@ export default function AdminOrderDetailPage() {
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [trackingUpdating, setTrackingUpdating] = useState(false);
+  const [trackingInput, setTrackingInput] = useState("");
   const [refunding, setRefunding] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
   const [error, setError] = useState("");
@@ -74,6 +77,36 @@ export default function AdminOrderDetailPage() {
   useEffect(() => {
     fetchOrder();
   }, [fetchOrder]);
+
+  useEffect(() => {
+    if (order) setTrackingInput(order.trackingNumber ?? "");
+  }, [order]);
+
+  const handleTrackingSave = async () => {
+    setTrackingUpdating(true);
+    setError("");
+    try {
+      const token = getAuthToken();
+      const res = await fetch(
+        `${BASE_URL}/api/admin/orders/${orderId}/tracking`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ trackingNumber: trackingInput.trim() || null }),
+        },
+      );
+      if (!res.ok) throw new Error("Failed to update tracking");
+      const json = await res.json();
+      setOrder(json.order);
+    } catch {
+      setError("Failed to update tracking");
+    } finally {
+      setTrackingUpdating(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     if (!order) return;
@@ -432,14 +465,35 @@ export default function AdminOrderDetailPage() {
           </div>
 
           {/* Tracking */}
-          {order.trackingNumber && (
-            <div className="card bg-base-100 shadow">
-              <div className="card-body">
-                <h2 className="card-title text-lg">Tracking</h2>
-                <div className="font-mono text-sm">{order.trackingNumber}</div>
+          <div className="card bg-base-100 shadow">
+            <div className="card-body">
+              <h2 className="card-title text-lg">
+                <Truck className="size-5" /> Tracking
+              </h2>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Enter tracking ID"
+                  className="input input-bordered input-sm w-full font-mono"
+                  value={trackingInput}
+                  onChange={(e) => setTrackingInput(e.target.value)}
+                  disabled={trackingUpdating}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={handleTrackingSave}
+                  disabled={trackingUpdating}
+                >
+                  {trackingUpdating ? (
+                    <span className="loading loading-spinner loading-xs" />
+                  ) : (
+                    "Save Tracking"
+                  )}
+                </button>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Visitor Metadata */}
           {(order.ipAddress || order.geoCity) && (

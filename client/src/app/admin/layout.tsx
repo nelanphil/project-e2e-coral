@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
@@ -14,6 +14,36 @@ export default function AdminLayout({
   const { user, loading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const scrollPositionRef = useRef(0);
+  const wasLockedRef = useRef(false);
+
+  // Prevent background scroll when admin sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      scrollPositionRef.current = window.scrollY;
+      wasLockedRef.current = true;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollPositionRef.current}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+    } else {
+      const scrollY = scrollPositionRef.current;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      if (wasLockedRef.current) {
+        wasLockedRef.current = false;
+        window.scrollTo(0, scrollY);
+      }
+    }
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+    };
+  }, [sidebarOpen]);
 
   useEffect(() => {
     if (loading) return;
@@ -106,6 +136,11 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
+              <Link href="/admin/users" onClick={closeSidebar}>
+                Users
+              </Link>
+            </li>
+            <li>
               <Link href="/admin/shipping" onClick={closeSidebar}>
                 Shipping
               </Link>
@@ -118,6 +153,11 @@ export default function AdminLayout({
             <li>
               <Link href="/admin/discounts" onClick={closeSidebar}>
                 Discounts
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/users" onClick={closeSidebar}>
+                Users
               </Link>
             </li>
             <li>

@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { getAuthToken } from "@/lib/auth";
 import { ChevronUp, ChevronDown, Pencil, Check, X } from "lucide-react";
 
+const TICKER_CHANNEL = "ticker-banner-update";
+
+function notifyTickerUpdate() {
+  if (typeof BroadcastChannel !== "undefined") {
+    new BroadcastChannel(TICKER_CHANNEL).postMessage("update");
+  }
+}
+
 const api = (path: string, options?: RequestInit) => {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
   const token = getAuthToken();
@@ -39,6 +47,9 @@ export default function ScrollingBannerPage() {
 
   // reorder loading
   const [movingId, setMovingId] = useState<string | null>(null);
+
+  // visibility toggle loading
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const addInputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +93,7 @@ export default function ScrollingBannerPage() {
       setNewText("");
       addInputRef.current?.focus();
       await loadItems();
+      notifyTickerUpdate();
     } catch {
       setError("Failed to add item");
     } finally {
@@ -117,6 +129,7 @@ export default function ScrollingBannerPage() {
       }
       setEditingId(null);
       await loadItems();
+      notifyTickerUpdate();
     } catch {
       setError("Failed to save item");
     } finally {
@@ -138,28 +151,11 @@ export default function ScrollingBannerPage() {
       }
       const data = (await res.json()) as { items: TickerItem[] };
       setItems(data.items ?? []);
+      notifyTickerUpdate();
     } catch {
       setError("Failed to reorder item");
     } finally {
       setMovingId(null);
-    }
-  }
-
-  async function handleSoftDelete(id: string) {
-    setError(null);
-    // cancel edit if deleting the item being edited
-    if (editingId === id) cancelEdit();
-    try {
-      const res = await api(`/api/admin/ticker-items/${id}/soft-delete`, {
-        method: "PATCH",
-      });
-      if (!res.ok) {
-        setError("Failed to remove item");
-        return;
-      }
-      await loadItems();
-    } catch {
-      setError("Failed to remove item");
     }
   }
 
@@ -174,8 +170,50 @@ export default function ScrollingBannerPage() {
         return;
       }
       await loadItems();
+      notifyTickerUpdate();
     } catch {
       setError("Failed to permanently delete item");
+    }
+  }
+
+  async function handleRestore(id: string) {
+    setTogglingId(id);
+    setError(null);
+    try {
+      const res = await api(`/api/admin/ticker-items/${id}/restore`, {
+        method: "PATCH",
+      });
+      if (!res.ok) {
+        setError("Failed to restore item");
+        return;
+      }
+      await loadItems();
+      notifyTickerUpdate();
+    } catch {
+      setError("Failed to restore item");
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
+  async function handleToggleVisibility(id: string) {
+    setTogglingId(id);
+    setError(null);
+    try {
+      const res = await api(`/api/admin/ticker-items/${id}/soft-delete`, {
+        method: "PATCH",
+      });
+      if (!res.ok) {
+        setError("Failed to hide item");
+        return;
+      }
+      if (editingId === id) cancelEdit();
+      await loadItems();
+      notifyTickerUpdate();
+    } catch {
+      setError("Failed to hide item");
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -235,6 +273,9 @@ export default function ScrollingBannerPage() {
               </span>
             )}
           </h2>
+          <p className="text-base-content/50 text-xs -mt-1">
+            Toggle off to hide from banner without deleting.
+          </p>
 
           {loading ? (
             <div className="flex justify-center py-6">
@@ -248,6 +289,20 @@ export default function ScrollingBannerPage() {
             <ul className="divide-y divide-base-200">
               {active.map((item, idx) => (
                 <li key={item._id} className="flex items-center gap-2 py-3">
+                  {/* Visibility toggle */}
+                  <label
+                    className="flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    title="Hide from banner"
+                  >
+                    <input
+                      type="checkbox"
+                      className="toggle toggle-sm toggle-success"
+                      checked
+                      disabled={togglingId === item._id}
+                      onChange={() => handleToggleVisibility(item._id)}
+                      aria-label="Hide from banner"
+                    />
+                  </label>
                   {/* Reorder buttons */}
                   <div className="flex flex-col shrink-0">
                     <button
@@ -319,23 +374,14 @@ export default function ScrollingBannerPage() {
                         </button>
                       </>
                     ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          aria-label="Edit"
-                          onClick={() => startEdit(item)}
-                        >
-                          <Pencil className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline btn-error btn-sm"
-                          onClick={() => handleSoftDelete(item._id)}
-                        >
-                          Remove
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        aria-label="Edit"
+                        onClick={() => startEdit(item)}
+                      >
+                        <Pencil className="size-4" />
+                      </button>
                     )}
                   </div>
                 </li>
@@ -358,8 +404,8 @@ export default function ScrollingBannerPage() {
                 </span>
               </h2>
               <p className="text-base-content/50 text-xs">
-                These messages are hidden from the banner. Permanently delete to
-                remove them entirely.
+                These messages are hidden from the banner. Toggle on to show
+                again, or permanently delete to remove.
               </p>
               <ul className="divide-y divide-base-200">
                 {deleted.map((item) => (
@@ -367,6 +413,20 @@ export default function ScrollingBannerPage() {
                     key={item._id}
                     className="flex items-center justify-between gap-4 py-3"
                   >
+                    {/* Visibility toggle - show in banner */}
+                    <label
+                      className="flex items-center gap-1.5 shrink-0 cursor-pointer"
+                      title="Show on banner"
+                    >
+                      <input
+                        type="checkbox"
+                        className="toggle toggle-sm toggle-success"
+                        checked={false}
+                        disabled={togglingId === item._id}
+                        onChange={() => handleRestore(item._id)}
+                        aria-label="Show on banner"
+                      />
+                    </label>
                     <span className="flex-1 text-sm line-through text-base-content/40">
                       {item.text}
                     </span>

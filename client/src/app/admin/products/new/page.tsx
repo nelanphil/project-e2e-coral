@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import { slugify } from "@/lib/slugify";
@@ -12,7 +11,9 @@ import {
   revalidateProducts,
 } from "@/app/actions/revalidate";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import type { Category } from "@/lib/types";
+import { filterDisplayCategories } from "@/lib/types";
 import type { Collection } from "@/lib/types";
 
 const api = (path: string, options?: RequestInit) => {
@@ -65,7 +66,6 @@ export default function NewProductPage() {
     | "collections"
     | "attributes"
   >("details");
-  const [newImageUrl, setNewImageUrl] = useState("");
   const [newAttributeKey, setNewAttributeKey] = useState("");
   const [newAttributeValue, setNewAttributeValue] = useState("");
 
@@ -152,30 +152,6 @@ export default function NewProductPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function addImage() {
-    if (newImageUrl.trim()) {
-      setForm((f) => ({ ...f, images: [...f.images, newImageUrl.trim()] }));
-      setNewImageUrl("");
-    }
-  }
-
-  function removeImage(index: number) {
-    setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== index) }));
-  }
-
-  function moveImage(index: number, direction: "up" | "down") {
-    setForm((f) => {
-      const newImages = [...f.images];
-      const newIndex = direction === "up" ? index - 1 : index + 1;
-      if (newIndex < 0 || newIndex >= newImages.length) return f;
-      [newImages[index], newImages[newIndex]] = [
-        newImages[newIndex],
-        newImages[index],
-      ];
-      return { ...f, images: newImages };
-    });
   }
 
   function toggleCollection(collectionId: string) {
@@ -433,7 +409,7 @@ export default function NewProductPage() {
                     setForm((f) => ({ ...f, category: e.target.value }))
                   }>
                   <option value="">Select a category</option>
-                  {categories.map((c) => (
+                  {filterDisplayCategories(categories).map((c) => (
                     <option key={c._id} value={c._id}>
                       {c.name}
                     </option>
@@ -442,85 +418,11 @@ export default function NewProductPage() {
               </div>
             </div>
 
-            <div className={activeTab !== "images" ? "hidden" : "space-y-4"}>
-              <div>
-                <label className="label">
-                  <span className="label-text">Product Images</span>
-                </label>
-                <p className="text-sm text-base-content/70 mb-4">
-                  Add image URLs. The first image will be used as the primary
-                  product image.
-                </p>
-                <div className="flex gap-2 mb-4">
-                  <input
-                    type="url"
-                    className="input input-bordered flex-1"
-                    placeholder="https://example.com/image.jpg"
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addImage();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={addImage}>
-                    Add Image
-                  </button>
-                </div>
-                {form.images.length > 0 && (
-                  <div className="space-y-2">
-                    {form.images.map((url, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
-                        <div className="flex-1 flex items-center gap-2">
-                          <Image
-                            src={url}
-                            alt={`Product ${index + 1}`}
-                            width={64}
-                            height={64}
-                            className="w-16 h-16 object-cover rounded"
-                            unoptimized
-                          />
-                          <span className="text-sm truncate flex-1">{url}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => moveImage(index, "up")}
-                            disabled={index === 0}>
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => moveImage(index, "down")}
-                            disabled={index === form.images.length - 1}>
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-error btn-xs"
-                            onClick={() => removeImage(index)}>
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {form.images.length === 0 && (
-                  <p className="text-sm text-base-content/60 italic">
-                    No images added yet.
-                  </p>
-                )}
-              </div>
+            <div className={activeTab !== "images" ? "hidden" : ""}>
+              <ProductImageManager
+                images={form.images}
+                onChange={(imgs) => setForm((f) => ({ ...f, images: imgs }))}
+              />
             </div>
 
             <div className={activeTab !== "pricing" ? "hidden" : "space-y-4"}>

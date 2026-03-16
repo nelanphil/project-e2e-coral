@@ -11,6 +11,15 @@ export interface Category {
   slug: string;
 }
 
+/** Excludes the Uncategorized placeholder from display (no products should use it). */
+export function filterDisplayCategories(categories: Category[]): Category[] {
+  return categories.filter(
+    (c) =>
+      c.name?.toLowerCase() !== "uncategorized" &&
+      c.slug?.toLowerCase() !== "uncategorized",
+  );
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -107,6 +116,7 @@ export interface OrderLineItem {
 
 export interface OrderConfirmation {
   _id: string;
+  orderNumber?: string;
   lineItems: OrderLineItem[];
   shippingAddress: {
     line1: string;
@@ -252,4 +262,53 @@ export interface AdminOrdersResponse {
 
 export interface AdminOrderDetailResponse {
   order: AdminOrder;
+}
+
+// ─── Admin Users ────────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  _id: string;
+  email?: string;
+  name: string;
+  role: string;
+  pointsBalance: number;
+  lastVisit?: string;
+  createdAt: string;
+}
+
+export interface AdminUserRoleCounts {
+  total: number;
+  customer: number;
+  admin: number;
+  guest: number;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUser[];
+  total: number;
+  page: number;
+  limit: number;
+  counts: AdminUserRoleCounts;
+}
+
+export interface AdminUserDetail {
+  _id: string;
+  email?: string;
+  name: string;
+  role: string;
+  pointsBalance: number;
+  visitCount?: number;
+  lastVisit?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  referrer?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUserDetailResponse {
+  user: AdminUserDetail;
+  orders: AdminOrder[];
+  totalOrders: number;
+  totalSpent: number;
 }

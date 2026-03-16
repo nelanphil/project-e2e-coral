@@ -50,6 +50,7 @@ export interface IOrder {
   geoCountry?: string;
   geoRegion?: string;
   geoCity?: string;
+  confirmationEmailsSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -119,6 +120,7 @@ const orderSchema = new Schema<IOrder>(
     geoCountry: { type: String },
     geoRegion: { type: String },
     geoCity: { type: String },
+    confirmationEmailsSentAt: { type: Date },
   },
   { timestamps: true },
 );
@@ -126,7 +128,6 @@ const orderSchema = new Schema<IOrder>(
 orderSchema.index({ user: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ cartSessionId: 1, status: 1 });
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ email: 1 });
 orderSchema.index({ stripePaymentIntentId: 1 });

@@ -16,7 +16,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCartDrawer } from "@/lib/cart/cart-drawer-context";
 import { useCartStore } from "@/stores/cart-store";
 import { useThemeStore } from "@/stores/theme-store";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function Nav() {
   const { user, loading, logout } = useAuth();
@@ -27,6 +27,36 @@ export function Nav() {
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const scrollPositionRef = useRef(0);
+  const wasLockedRef = useRef(false);
+
+  // Prevent background scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      scrollPositionRef.current = window.scrollY;
+      wasLockedRef.current = true;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollPositionRef.current}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+    } else {
+      const scrollY = scrollPositionRef.current;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      if (wasLockedRef.current) {
+        wasLockedRef.current = false;
+        window.scrollTo(0, scrollY);
+      }
+    }
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <>

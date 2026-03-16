@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
+import { ProductImageManager } from "@/components/admin/ProductImageManager";
 import { slugify } from "@/lib/slugify";
 import { useProductStore } from "@/stores/product-store";
 import { revalidateProducts } from "@/app/actions/revalidate";
 import type { Product } from "@/lib/types";
 import type { Category } from "@/lib/types";
+import { filterDisplayCategories } from "@/lib/types";
 import type { Collection } from "@/lib/types";
 
 const api = (path: string, options?: RequestInit) => {
@@ -77,9 +78,6 @@ export default function EditProductPage() {
     | "collections"
     | "attributes"
   >("details");
-  const [newImageUrl, setNewImageUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
   const [newAttributeKey, setNewAttributeKey] = useState("");
   const [newAttributeValue, setNewAttributeValue] = useState("");
 
@@ -199,64 +197,6 @@ export default function EditProductPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function addImage() {
-    if (newImageUrl.trim()) {
-      setForm((f) => ({ ...f, images: [...f.images, newImageUrl.trim()] }));
-      setNewImageUrl("");
-    }
-  }
-
-  async function uploadFiles(files: FileList | File[]) {
-    const imageFiles = Array.from(files).filter((f) =>
-      f.type.startsWith("image/"),
-    );
-    if (imageFiles.length === 0) return;
-    setUploading(true);
-    setError(null);
-    try {
-      const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
-      const token = getAuthToken();
-      const urls: string[] = [];
-      for (const file of imageFiles) {
-        const body = new FormData();
-        body.append("image", file);
-        const res = await fetch(`${base}/api/upload/image`, {
-          method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body,
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `Upload failed for ${file.name}`);
-        }
-        const data = await res.json();
-        urls.push(data.url);
-      }
-      setForm((f) => ({ ...f, images: [...f.images, ...urls] }));
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Image upload failed");
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  function removeImage(index: number) {
-    setForm((f) => ({ ...f, images: f.images.filter((_, i) => i !== index) }));
-  }
-
-  function moveImage(index: number, direction: "up" | "down") {
-    setForm((f) => {
-      const newImages = [...f.images];
-      const newIndex = direction === "up" ? index - 1 : index + 1;
-      if (newIndex < 0 || newIndex >= newImages.length) return f;
-      [newImages[index], newImages[newIndex]] = [
-        newImages[newIndex],
-        newImages[index],
-      ];
-      return { ...f, images: newImages };
-    });
   }
 
   function toggleCollection(collectionId: string) {
@@ -468,7 +408,7 @@ export default function EditProductPage() {
                     }
                     required>
                     <option value="">Select a category</option>
-                    {categories.map((c) => (
+                    {filterDisplayCategories(categories).map((c) => (
                       <option key={c._id} value={c._id}>
                         {c.name}
                       </option>
@@ -477,157 +417,11 @@ export default function EditProductPage() {
                 </div>
               </div>
 
-              <div className={activeTab !== "images" ? "hidden" : "space-y-4"}>
-                <div>
-                  <label className="label">
-                    <span className="label-text">Product Images</span>
-                  </label>
-                  <p className="text-sm text-base-content/70 mb-2">
-                    Upload images or add by URL. The first image will be used as
-                    the primary product image.
-                  </p>
-
-                  <div
-                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                      dragOver
-                        ? "border-primary bg-primary/5"
-                        : "border-base-300 hover:border-primary/50"
-                    } ${uploading ? "pointer-events-none opacity-60" : "cursor-pointer"}`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOver(true);
-                    }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setDragOver(false);
-                      if (e.dataTransfer.files.length)
-                        uploadFiles(e.dataTransfer.files);
-                    }}
-                    onClick={() => {
-                      if (!uploading)
-                        document.getElementById("image-file-input")?.click();
-                    }}>
-                    {uploading ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="loading loading-spinner loading-md" />
-                        <span className="text-sm text-base-content/70">
-                          Uploading…
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-8 w-8 text-base-content/40"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={1.5}>
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"
-                          />
-                        </svg>
-                        <span className="text-sm font-medium">
-                          Click to upload or drag and drop
-                        </span>
-                        <span className="text-xs text-base-content/50">
-                          PNG, JPG, GIF, WEBP up to 10 MB
-                        </span>
-                      </div>
-                    )}
-                    <input
-                      id="image-file-input"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.length) {
-                          uploadFiles(e.target.files);
-                          e.target.value = "";
-                        }
-                      }}
-                    />
-                  </div>
-
-                  <div className="divider text-xs text-base-content/50">
-                    OR ADD BY URL
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      className="input input-bordered input-sm flex-1"
-                      placeholder="https://example.com/image.jpg"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addImage();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      onClick={addImage}>
-                      Add URL
-                    </button>
-                  </div>
-                </div>
-
-                {form.images.length > 0 && (
-                  <div className="space-y-2">
-                    {form.images.map((url, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
-                        <div className="flex-1 flex items-center gap-2 min-w-0">
-                          <Image
-                            src={url}
-                            alt={`Product ${index + 1}`}
-                            width={64}
-                            height={64}
-                            className="w-16 h-16 object-cover rounded shrink-0"
-                            unoptimized
-                          />
-                          <span className="text-sm truncate flex-1">{url}</span>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => moveImage(index, "up")}
-                            disabled={index === 0}>
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => moveImage(index, "down")}
-                            disabled={index === form.images.length - 1}>
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-error btn-xs"
-                            onClick={() => removeImage(index)}>
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {form.images.length === 0 && (
-                  <p className="text-sm text-base-content/60 italic">
-                    No images added yet.
-                  </p>
-                )}
+              <div className={activeTab !== "images" ? "hidden" : ""}>
+                <ProductImageManager
+                  images={form.images}
+                  onChange={(imgs) => setForm((f) => ({ ...f, images: imgs }))}
+                />
               </div>
 
               <div className={activeTab !== "pricing" ? "hidden" : "space-y-4"}>

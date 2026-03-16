@@ -14,12 +14,17 @@ export interface FloridaTaxResult {
  * Get Florida sales tax rate for a shipping address.
  * Returns 0 for non-FL addresses; county rate or 7.5% fallback for FL.
  */
+/** Normalize state to 2-letter abbrev; accepts "FL" or "Florida" */
+function isFloridaState(state: string | undefined): boolean {
+  const s = state?.toUpperCase().trim();
+  return s === "FL" || s === "FLORIDA";
+}
+
 export function getFloridaTaxRate(address: {
   state?: string;
   postalCode?: string;
 }): FloridaTaxResult {
-  const state = address.state?.toUpperCase().trim();
-  if (state !== "FL") {
+  if (!isFloridaState(address.state)) {
     return { rate: 0, source: "fallback" };
   }
 

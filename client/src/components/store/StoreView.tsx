@@ -15,6 +15,7 @@ import {
 import { useState, useMemo, useEffect, useRef } from "react";
 import { stripHtml } from "@/lib/strip-html";
 import type { Product, Category } from "@/lib/types";
+import { filterDisplayCategories } from "@/lib/types";
 import { useProductStore } from "@/stores/product-store";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
@@ -145,12 +146,7 @@ export function StoreView({
   const displayCategories =
     categories.length > 0 ? categories : initialCategories;
   const storeCategories = useMemo(
-    () =>
-      displayCategories.filter(
-        (c) =>
-          c.slug?.toLowerCase() !== "uncategorized" &&
-          c.name?.toLowerCase() !== "uncategorized",
-      ),
+    () => filterDisplayCategories(displayCategories),
     [displayCategories],
   );
   const selectedCategoryId = useMemo(() => {

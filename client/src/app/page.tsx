@@ -4,10 +4,11 @@ import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { CollectionsCarousel } from "@/components/home/CollectionsCarousel";
 import { fetchApi } from "@/lib/api-server";
 import { stripHtml } from "@/lib/strip-html";
-import type {
-  CategoriesResponse,
-  CollectionsResponse,
-  ProductsResponse,
+import {
+  filterDisplayCategories,
+  type CategoriesResponse,
+  type CollectionsResponse,
+  type ProductsResponse,
 } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -176,20 +177,17 @@ export default async function Home() {
       </section>
 
       {/* Categories Section */}
-      {categories.filter(
-        (c) => !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name),
-      ).length > 0 && (
+      {filterDisplayCategories(categories)
+        .filter((c) => !["Dry Goods", "WYSIWYG"].includes(c.name))
+        .length > 0 && (
         <section className="py-16 px-4 bg-base-200">
           <div className="container mx-auto max-w-4xl">
             <h2 className="text-3xl font-bold text-center mb-8">
               Browse by Category
             </h2>
             <div className="flex flex-wrap gap-3 justify-center">
-              {categories
-                .filter(
-                  (c) =>
-                    !["Uncategorized", "Dry Goods", "WYSIWYG"].includes(c.name),
-                )
+              {filterDisplayCategories(categories)
+                .filter((c) => !["Dry Goods", "WYSIWYG"].includes(c.name))
                 .map((category) => (
                   <Link
                     key={category._id}

@@ -238,12 +238,16 @@ export default function CheckoutPage() {
     shippingAddress.country,
   ]);
 
+  const isFlorida = useMemo(() => {
+    const s = effectiveShippingAddress.state?.toUpperCase().trim();
+    return s === "FL" || s === "FLORIDA";
+  }, [effectiveShippingAddress.state]);
+
   useEffect(() => {
-    const state = effectiveShippingAddress.state?.toUpperCase().trim();
     const zip = effectiveShippingAddress.postalCode
       ?.replace(/\D/g, "")
       .slice(0, 5);
-    if (state !== "FL" || !zip || zip.length !== 5) {
+    if (!isFlorida || !zip || zip.length !== 5) {
       const t = setTimeout(() => setTaxAmount(0), 0);
       return () => clearTimeout(t);
     }
@@ -271,7 +275,7 @@ export default function CheckoutPage() {
     return () => {
       if (taxFetchRef.current) clearTimeout(taxFetchRef.current);
     };
-  }, [effectiveShippingAddress, subtotal]);
+  }, [effectiveShippingAddress, subtotal, isFlorida]);
 
   useEffect(() => {
     const addr = effectiveShippingAddress;
@@ -767,6 +771,14 @@ export default function CheckoutPage() {
                 <span>Subtotal</span>
                 <span>${(subtotal / 100).toFixed(2)}</span>
               </div>
+              {isFlorida &&
+                taxAmount !== null &&
+                taxAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>Tax (FL)</span>
+                    <span>${(taxAmount / 100).toFixed(2)}</span>
+                  </div>
+                )}
               {shippingAmount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span>Shipping</span>
@@ -797,14 +809,6 @@ export default function CheckoutPage() {
                   <span>🎉 Free shipping applied!</span>
                 </div>
               )}
-              {effectiveShippingAddress.state?.toUpperCase().trim() === "FL" &&
-                taxAmount !== null &&
-                taxAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Tax (FL)</span>
-                    <span>${(taxAmount / 100).toFixed(2)}</span>
-                  </div>
-                )}
               {/* Discount code input */}
               <div className="pt-2 border-t border-base-300">
                 {discountCode ? (

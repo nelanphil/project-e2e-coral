@@ -21,6 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.0",
     "multer": "^2.0.2",
+    "nodemailer": "^6.9.16",
     "node-cron": "^4.2.1",
     "shippo": "^2.0.1",
     "stripe": "^17.4.0",
@@ -35,6 +36,7 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/multer": "^2.0.0",
     "@types/node": "^20.0.0",
+    "@types/nodemailer": "^6.4.16",
     "nodemon": "^3.1.14",
     "tsx": "^4.19.0",
     "typescript": "^5.0.0"

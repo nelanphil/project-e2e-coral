@@ -1,4 +1,5 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import Stripe from "stripe";
 import { requireAdmin, type AuthRequest } from "../middleware/auth.js";
 import { Order } from "../models/Order.js";
@@ -421,6 +422,27 @@ adminRouter.patch("/orders/:id/status", async (req, res) => {
   }
 });
 
+adminRouter.patch("/orders/:id/tracking", async (req, res) => {
+  try {
+    const { trackingNumber } = req.body as { trackingNumber?: string };
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { $set: { trackingNumber: trackingNumber?.trim() || null } },
+      { new: true },
+    )
+      .populate("user", "name email role")
+      .populate("lineItems.product", "name slug images price")
+      .lean();
+    if (!order) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+    res.json({ order });
+  } catch {
+    res.status(500).json({ error: "Failed to update tracking" });
+  }
+});
+
 adminRouter.post("/orders/:id/refund", async (req, res) => {
   try {
     const order = (await Order.findById(req.params.id)) as IOrder | null;
@@ -470,16 +492,87 @@ adminRouter.post("/orders/:id/refund", async (req, res) => {
   }
 });
 
-adminRouter.get("/inventory", async (_req, res) => {
+adminRouter.get("/inventory", async (req, res) => {
   try {
-    const inventories = await Inventory.find()
-      .populate({
-        path: "product",
-        select: "name slug price cost isActive deletedAt",
-      })
-      .sort({ updatedAt: -1 })
-      .lean();
-    res.json({ inventory: inventories });
+    const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);
+    const limit = Math.min(
+      250,
+      Math.max(1, parseInt(String(req.query.limit), 10) || 50),
+    );
+    const search = (req.query.search as string)?.trim();
+    const sortField = (req.query.sort as string) || "updatedAt";
+    const sortOrder = req.query.order === "asc" ? 1 : -1;
+
+    const allowedSortFields: Record<string, string> = {
+      name: "product.name",
+      price: "product.price",
+      cost: "product.cost",
+      quantity: "quantity",
+      updatedAt: "updatedAt",
+    };
+    const sortKey = allowedSortFields[sortField] ?? "updatedAt";
+    const sortObj: Record<string, 1 | -1> = { [sortKey]: sortOrder };
+
+    const pipeline: mongoose.mongo.PipelineStage[] = [
+      {
+        $lookup: {
+          from: "products",
+          localField: "product",
+          foreignField: "_id",
+          as: "productDoc",
+        },
+      },
+      {
+        $addFields: {
+          product: { $arrayElemAt: ["$productDoc", 0] },
+        },
+      },
+      { $match: { product: { $ne: null } } },
+    ];
+
+    if (search) {
+      pipeline.push({
+        $match: {
+          "product.name": { $regex: search, $options: "i" },
+        },
+      });
+    }
+
+    pipeline.push(
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          inventory: [
+            { $sort: sortObj },
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 1,
+                product: {
+                  _id: "$product._id",
+                  name: "$product.name",
+                  slug: "$product.slug",
+                  price: "$product.price",
+                  cost: "$product.cost",
+                  isActive: "$product.isActive",
+                  deletedAt: "$product.deletedAt",
+                },
+                quantity: 1,
+                updatedAt: 1,
+              },
+            },
+          ],
+        },
+      },
+    );
+
+    const result = await Inventory.aggregate(pipeline);
+    const metadata = result[0]?.metadata?.[0];
+    const total = metadata?.total ?? 0;
+    const inventory = result[0]?.inventory ?? [];
+
+    res.json({ inventory, total, page, limit });
   } catch {
     res.status(500).json({ error: "Failed to list inventory" });
   }
@@ -757,6 +850,105 @@ adminRouter.post("/rewards/adjust", async (req, res) => {
     res.json({ pointsBalance: newBalance });
   } catch {
     res.status(500).json({ error: "Failed to adjust points" });
+  }
+});
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+adminRouter.get("/users", async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);
+    const rawLimit = parseInt(String(req.query.limit), 10) || 50;
+    const limit = [50, 100, 150, 250].includes(rawLimit) ? rawLimit : 50;
+    const skip = (page - 1) * limit;
+
+    const search =
+      typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const role =
+      typeof req.query.role === "string" ? req.query.role.trim() : "";
+
+    const filter: Record<string, unknown> = {};
+    if (role && ["customer", "admin", "guest"].includes(role)) {
+      filter.role = role;
+    }
+    if (search) {
+      const regex = { $regex: search, $options: "i" };
+      filter.$or = [{ name: regex }, { email: regex }];
+    }
+
+    const [users, total, roleCounts] = await Promise.all([
+      User.find(filter)
+        .select("email name role pointsBalance lastVisit createdAt")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(filter),
+      User.aggregate([
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            customer: {
+              $sum: { $cond: [{ $eq: ["$role", "customer"] }, 1, 0] },
+            },
+            admin: {
+              $sum: { $cond: [{ $eq: ["$role", "admin"] }, 1, 0] },
+            },
+            guest: {
+              $sum: { $cond: [{ $eq: ["$role", "guest"] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const counts = roleCounts[0] ?? { total: 0, customer: 0, admin: 0, guest: 0 };
+    delete counts._id;
+
+    res.json({ users, total, page, limit, counts });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+adminRouter.get("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select("email name role pointsBalance visitCount lastVisit ipAddress userAgent referrer createdAt updatedAt")
+      .lean();
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const orders = await Order.find({ user: req.params.id })
+      .select("orderNumber status paymentStatus lineItems taxAmount shippingAmount discountAmountCents pointsDiscountCents createdAt")
+      .populate("lineItems.product", "name slug images")
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+
+    const totalOrders = await Order.countDocuments({ user: req.params.id });
+
+    const totalSpent = orders.reduce((sum, o) => {
+      const lineTotal = o.lineItems.reduce(
+        (s: number, li: { price: number; quantity: number }) => s + li.price * li.quantity,
+        0,
+      );
+      return (
+        sum +
+        lineTotal +
+        (o.taxAmount ?? 0) +
+        (o.shippingAmount ?? 0) -
+        (o.pointsDiscountCents ?? 0) -
+        (o.discountAmountCents ?? 0)
+      );
+    }, 0);
+
+    res.json({ user, orders, totalOrders, totalSpent });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch user" });
   }
 });
 
@@ -1101,6 +1293,24 @@ adminRouter.patch("/ticker-items/:id/soft-delete", async (req, res) => {
     res.json({ item });
   } catch {
     res.status(500).json({ error: "Failed to soft-delete ticker item" });
+  }
+});
+
+adminRouter.patch("/ticker-items/:id/restore", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await TickerItem.findByIdAndUpdate(
+      id,
+      { $set: { deletedAt: null } },
+      { new: true },
+    ).lean();
+    if (!item) {
+      res.status(404).json({ error: "Ticker item not found" });
+      return;
+    }
+    res.json({ item });
+  } catch {
+    res.status(500).json({ error: "Failed to restore ticker item" });
   }
 });
 

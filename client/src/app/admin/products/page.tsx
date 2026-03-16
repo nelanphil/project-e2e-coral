@@ -6,10 +6,11 @@ import Link from "next/link";
 import { revalidateCollections } from "@/app/actions/revalidate";
 import { useProductStore } from "@/stores/product-store";
 import type { Product, Collection } from "@/lib/types";
+import { filterDisplayCategories } from "@/lib/types";
 import { getAuthToken } from "@/lib/auth";
 
 const DEFAULT_PAGE_SIZE = 50;
-const PAGE_SIZE_OPTIONS = [50, 100, 250, 500];
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500];
 const SEARCH_DEBOUNCE_MS = 400;
 
 function getApiUrl() {
@@ -308,7 +309,7 @@ function CollectionsDropdown({
       <button
         ref={triggerRef}
         type="button"
-        className="btn btn-ghost btn-xs text-left normal-case gap-1 max-w-[200px]"
+        className="btn btn-ghost btn-sm sm:btn-xs text-left normal-case gap-1 max-w-[200px] min-h-10 sm:min-h-0"
         onClick={() => setOpen(!open)}>
         <span className="truncate">
           {displayNames.length === 0 ? "None" : displayNames.join(", ")}
@@ -591,11 +592,11 @@ export default function AdminProductsPage() {
 
   const PaginationControls = () => {
     return (
-      <div className="flex items-center justify-between mt-4 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-4 mb-4">
         <div className="flex items-center gap-2">
           <span className="text-sm whitespace-nowrap">Rows per page:</span>
           <select
-            className="select select-bordered select-sm"
+            className="select select-bordered select-sm min-h-11 w-auto max-w-20"
             value={pageSize}
             onChange={(e) => handlePageSizeChange(Number(e.target.value))}>
             {PAGE_SIZE_OPTIONS.map((size) => (
@@ -607,16 +608,17 @@ export default function AdminProductsPage() {
         </div>
 
         {totalPages > 1 && (
-          <div className="join">
+          <div className="flex items-center gap-1 flex-wrap">
             <button
-              className="join-item btn btn-sm"
+              className="btn btn-sm min-h-11 min-w-11"
               onClick={() =>
                 fetchWithSort({
                   page: Math.max(1, page - 1),
                   q: debouncedSearchQuery.trim() || undefined,
                 })
               }
-              disabled={page === 1 || productsLoading}>
+              disabled={page === 1 || productsLoading}
+              aria-label="Previous page">
               «
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -631,43 +633,42 @@ export default function AdminProductsPage() {
                 const prevPage = arr[idx - 1];
                 const showEllipsis = prevPage && p - prevPage > 1;
                 return (
-                  <span key={p}>
+                  <span key={p} className="contents">
                     {showEllipsis && (
-                      <button
-                        className="join-item btn btn-sm btn-disabled"
-                        disabled>
-                        ...
-                      </button>
+                      <span className="px-2 py-2 text-base-content/50" aria-hidden>
+                        …
+                      </span>
                     )}
                     <button
-                      className={`join-item btn btn-sm ${page === p ? "btn-active" : ""}`}
+                      className={`btn btn-sm min-h-11 min-w-11 ${page === p ? "btn-active" : ""}`}
                       onClick={() =>
                         fetchWithSort({
                           page: p,
                           q: debouncedSearchQuery.trim() || undefined,
                         })
                       }
-                      disabled={productsLoading}>
+                      disabled={productsLoading}
+                      aria-label={`Page ${p}`}
+                      aria-current={page === p ? "page" : undefined}>
                       {p}
                     </button>
                   </span>
                 );
               })}
             <button
-              className="join-item btn btn-sm"
+              className="btn btn-sm min-h-11 min-w-11"
               onClick={() =>
                 fetchWithSort({
                   page: Math.min(totalPages, page + 1),
                   q: debouncedSearchQuery.trim() || undefined,
                 })
               }
-              disabled={page === totalPages || productsLoading}>
+              disabled={page === totalPages || productsLoading}
+              aria-label="Next page">
               »
             </button>
           </div>
         )}
-
-        <div className="w-[140px]" />
       </div>
     );
   };
@@ -732,7 +733,7 @@ export default function AdminProductsPage() {
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}>
               <option value="">All Categories</option>
-              {categories.map((cat) => (
+              {filterDisplayCategories(categories).map((cat) => (
                 <option key={cat._id} value={cat._id}>
                   {cat.name}
                 </option>
@@ -756,8 +757,8 @@ export default function AdminProductsPage() {
               </button>
             </div>
           )}
-          <div className="overflow-x-auto mt-4">
-            <table className="table">
+          <div className="overflow-x-auto mt-4 -mx-2 sm:mx-0 px-2 sm:px-0">
+            <table className="table min-w-[640px]">
               <thead>
                 <tr>
                   {SORTABLE_COLUMNS.map((col) => (
@@ -807,15 +808,16 @@ export default function AdminProductsPage() {
                         <td>{p.name}</td>
                         <td>
                           {viewStatus === "active" ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-h-10">
                               <input
                                 type="checkbox"
-                                className={`toggle toggle-sm ${isActive ? "toggle-success" : ""}`}
+                                className={`toggle toggle-sm min-h-6 min-w-12 ${isActive ? "toggle-success" : ""}`}
                                 checked={isActive}
                                 disabled={visibilityLoading === p._id}
                                 onChange={() =>
                                   handleVisibilityToggle(p._id, isActive)
                                 }
+                                aria-label={`Toggle visibility for ${p.name}`}
                               />
                               {!isActive && (
                                 <span className="badge badge-warning badge-xs whitespace-nowrap">
@@ -831,7 +833,7 @@ export default function AdminProductsPage() {
                         </td>
                         <td>
                           <select
-                            className="select select-bordered select-xs w-full max-w-[160px]"
+                            className="select select-bordered select-sm sm:select-xs w-full max-w-[160px] min-h-10 sm:min-h-0"
                             value={getCategoryId(p)}
                             disabled={
                               savingCategory === p._id ||
@@ -841,7 +843,7 @@ export default function AdminProductsPage() {
                               handleCategoryChange(p._id, e.target.value)
                             }>
                             {!getCategoryId(p) && <option value="">—</option>}
-                            {categories.map((cat) => (
+                            {filterDisplayCategories(categories).map((cat) => (
                               <option key={cat._id} value={cat._id}>
                                 {cat.name}
                               </option>
@@ -876,32 +878,34 @@ export default function AdminProductsPage() {
                           />
                         </td>
                         <td>{p.inventory?.quantity ?? 0}</td>
-                        <td className="flex items-center gap-1">
-                          {viewStatus === "active" ? (
-                            <>
-                              <Link
-                                href={`/admin/products/${p._id}`}
-                                className="btn btn-ghost btn-xs">
-                                Edit
-                              </Link>
+                        <td>
+                          <div className="flex flex-wrap items-center gap-2 min-h-11">
+                            {viewStatus === "active" ? (
+                              <>
+                                <Link
+                                  href={`/admin/products/${p._id}`}
+                                  className="btn btn-ghost btn-sm sm:btn-xs min-h-10 min-w-16 sm:min-w-0">
+                                  Edit
+                                </Link>
+                                <button
+                                  className="btn btn-ghost btn-sm sm:btn-xs text-error min-h-10 min-w-16 sm:min-w-0"
+                                  onClick={() => openDeleteModal(p)}>
+                                  Delete
+                                </button>
+                              </>
+                            ) : (
                               <button
-                                className="btn btn-ghost btn-xs text-error"
-                                onClick={() => openDeleteModal(p)}>
-                                Delete
+                                className="btn btn-success btn-sm sm:btn-xs min-h-10 min-w-20 sm:min-w-0"
+                                onClick={() => handleRestore(p._id)}
+                                disabled={actionLoading === p._id}>
+                                {actionLoading === p._id ? (
+                                  <span className="loading loading-spinner loading-xs" />
+                                ) : (
+                                  "Restore"
+                                )}
                               </button>
-                            </>
-                          ) : (
-                            <button
-                              className="btn btn-success btn-xs"
-                              onClick={() => handleRestore(p._id)}
-                              disabled={actionLoading === p._id}>
-                              {actionLoading === p._id ? (
-                                <span className="loading loading-spinner loading-xs" />
-                              ) : (
-                                "Restore"
-                              )}
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
