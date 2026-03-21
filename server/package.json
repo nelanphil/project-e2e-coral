@@ -9,7 +9,8 @@
     "seed": "tsx src/scripts/seed.ts",
     "sync-collections": "tsx src/scripts/sync-collection-products.ts",
     "import-inventory": "tsx src/scripts/import-inventory.ts",
-    "clean-product-names": "tsx src/scripts/clean-product-names.ts"
+    "clean-product-names": "tsx src/scripts/clean-product-names.ts",
+    "copy-db-to-prod": "tsx src/scripts/copy-db-to-prod.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
