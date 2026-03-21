@@ -1,9 +1,10 @@
 {
   "scripts": {
-    "build": "cd server && npm install --include=dev && npm run build",
-    "start": "node server/dist/index.js"
+    "build": "npm install && cd server && npm install --include=dev && npm run build && cd ../client && npm install && npm run build",
+    "start": "concurrently \"API_PORT=4004 node server/dist/index.js\" \"npm start --prefix client\""
   },
   "dependencies": {
+    "concurrently": "^9.0.0",
     "dotenv": "^17.2.4"
   }
 }

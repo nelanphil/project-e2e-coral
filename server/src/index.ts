@@ -3,7 +3,7 @@ import { connectDb } from "./lib/db.js";
 import app from "./app.js";
 import { startReleaseStaleCartReservationsJob } from "./jobs/releaseStaleCartReservations.js";
 
-const PORT = process.env.PORT ?? 4004;
+const PORT = process.env.API_PORT ?? process.env.PORT ?? 4004;
 
 connectDb()
   .then(() => {

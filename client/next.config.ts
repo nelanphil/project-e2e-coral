@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const API_PORT = process.env.API_PORT || "4004";
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
@@ -11,6 +13,14 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
       },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `http://localhost:${API_PORT}/api/:path*`,
+      },
+    ];
   },
 };
 
