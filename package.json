@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "build": "cd server && npm install && npm run build",
+    "start": "node server/dist/index.js"
+  },
   "dependencies": {
     "dotenv": "^17.2.4"
   }
