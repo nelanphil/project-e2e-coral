@@ -250,3 +250,46 @@ authRouter.post("/guest", async (req, res) => {
     },
   });
 });
+
+// ─── Change Password ─────────────────────────────────────────────────────────
+
+authRouter.put("/change-password", requireAuth, async (req, res) => {
+  const userId = (req as AuthRequest).userId;
+  const { currentPassword, newPassword } = req.body as {
+    currentPassword?: string;
+    newPassword?: string;
+  };
+
+  if (!currentPassword || !newPassword) {
+    res
+      .status(400)
+      .json({ error: "Current password and new password are required" });
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    res
+      .status(400)
+      .json({ error: "New password must be at least 8 characters" });
+    return;
+  }
+
+  const user = await User.findById(userId);
+  if (!user || user.role === "guest") {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  if (
+    !user.passwordHash ||
+    !(await bcrypt.compare(currentPassword, user.passwordHash))
+  ) {
+    res.status(401).json({ error: "Current password is incorrect" });
+    return;
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  await user.save();
+
+  res.json({ message: "Password updated successfully" });
+});

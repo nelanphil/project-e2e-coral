@@ -261,10 +261,9 @@ export async function sendTemporaryPasswordEmail(
     return false;
   }
 
-  const clientUrl = (process.env.CLIENT_ORIGIN ?? "http://localhost:3003").replace(
-    /\/$/,
-    "",
-  );
+  const clientUrl = (
+    process.env.CLIENT_ORIGIN ?? "http://localhost:3003"
+  ).replace(/\/$/, "");
   const loginUrl = `${clientUrl}/auth/login`;
   const displayName = name || "there";
 
