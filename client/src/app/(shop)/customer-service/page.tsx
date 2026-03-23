@@ -1,6 +1,8 @@
 import { PAGE_DEFINITIONS } from "@/lib/page-sections";
 import { ContactForm } from "@/components/ContactForm";
 
+export const dynamic = "force-dynamic";
+
 type SectionFromApi = { key: string; label?: string; content: string };
 
 async function getPageSections(slug: string): Promise<SectionFromApi[]> {

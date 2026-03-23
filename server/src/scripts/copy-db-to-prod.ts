@@ -17,7 +17,7 @@ const PROD_URI = process.env.MONGODB_PRODUCTION_URI;
 
 if (!DEV_URI || !PROD_URI) {
   console.error(
-    "❌ MONGODB_DEVELOPMENT_URI and MONGODB_PRODUCTION_URI must be set in .env"
+    "❌ MONGODB_DEVELOPMENT_URI and MONGODB_PRODUCTION_URI must be set in .env",
   );
   process.exit(1);
 }
@@ -41,7 +41,7 @@ async function copyDb() {
 
   const collections = await devDb.listCollections().toArray();
   console.log(
-    `\n📋 Found ${collections.length} collections in development database`
+    `\n📋 Found ${collections.length} collections in development database`,
   );
 
   for (const collInfo of collections) {
