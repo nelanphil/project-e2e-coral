@@ -22,6 +22,7 @@ const api = (path: string, options?: RequestInit) => {
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     api("/api/categories")
@@ -31,6 +32,16 @@ export default function AdminCategoriesPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this category?")) return;
+    setDeletingId(id);
+    const res = await api(`/api/categories/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setCategories((prev) => prev.filter((c) => c._id !== id));
+    }
+    setDeletingId(null);
+  }
 
   if (loading) {
     return (
@@ -74,13 +85,20 @@ export default function AdminCategoriesPage() {
                   <tr key={c._id}>
                     <td>{c.name}</td>
                     <td>{c.slug}</td>
-                    <td>
+                    <td className="flex gap-1">
                       <Link
                         href={`/admin/categories/${c._id}`}
                         className="btn btn-ghost btn-xs"
                       >
                         Edit
                       </Link>
+                      <button
+                        className="btn btn-ghost btn-xs text-error"
+                        disabled={deletingId === c._id}
+                        onClick={() => handleDelete(c._id)}
+                      >
+                        {deletingId === c._id ? "…" : "Delete"}
+                      </button>
                     </td>
                   </tr>
                 ))}

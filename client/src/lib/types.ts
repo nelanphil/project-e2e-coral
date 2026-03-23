@@ -10,6 +10,7 @@ export interface Category {
   _id: string;
   name: string;
   slug: string;
+  deletedAt?: string | null;
 }
 
 /** Excludes the Uncategorized placeholder from display (no products should use it). */

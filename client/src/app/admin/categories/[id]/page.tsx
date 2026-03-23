@@ -27,6 +27,7 @@ export default function EditCategoryPage() {
   const [category, setCategory] = useState<Category | null>(null);
   const [form, setForm] = useState({ name: "", slug: "" });
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -54,6 +55,24 @@ export default function EditCategoryPage() {
     if (res.ok) router.push("/admin/categories");
   }
 
+  async function handleDelete() {
+    if (!confirm("Are you sure you want to delete this category?")) return;
+    setDeleting(true);
+    const res = await api(`/api/categories/${id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (res.ok) router.push("/admin/categories");
+  }
+
+  async function handleRestore() {
+    const res = await api(`/api/categories/${id}/restore`, {
+      method: "PATCH",
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setCategory(updated);
+    }
+  }
+
   if (!category) return <p>Loading…</p>;
 
   return (
@@ -61,6 +80,14 @@ export default function EditCategoryPage() {
       <div className="card bg-base-100 shadow">
         <div className="card-body">
           <h1 className="card-title text-2xl">Edit category</h1>
+          {category.deletedAt && (
+            <div className="alert alert-warning mt-2">
+              <span>This category has been deleted.</span>
+              <button className="btn btn-sm btn-ghost" onClick={handleRestore}>
+                Restore
+              </button>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="mt-4 space-y-4 max-w-md">
             <div>
               <label className="label">Name</label>
@@ -89,12 +116,23 @@ export default function EditCategoryPage() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={loading}>
+                disabled={loading}
+              >
                 {loading ? "Saving…" : "Save"}
               </button>
               <Link href="/admin/categories" className="btn btn-ghost">
                 Cancel
               </Link>
+              {!category.deletedAt && (
+                <button
+                  type="button"
+                  className="btn btn-error btn-outline ml-auto"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                >
+                  {deleting ? "Deleting…" : "Delete"}
+                </button>
+              )}
             </div>
           </form>
         </div>

@@ -90,7 +90,7 @@ adminRouter.get("/stats", async (req, res) => {
         { $match: { "p.deletedAt": null } },
         { $count: "count" },
       ]),
-      Category.countDocuments({}),
+      Category.countDocuments({ deletedAt: null }),
       Order.aggregate<{ total: number }>([
         {
           $match: {
