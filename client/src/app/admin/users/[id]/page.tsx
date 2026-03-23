@@ -122,7 +122,8 @@ export default function AdminUserDetailPage() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold">
-                  {user.name || "Unnamed User"}
+                  {[user.firstName, user.lastName].filter(Boolean).join(" ") ||
+                    "Unnamed User"}
                 </h1>
                 <span className={`badge ${getRoleBadge(user.role)}`}>
                   {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
@@ -178,9 +179,7 @@ export default function AdminUserDetailPage() {
             </div>
             <div className="card bg-base-100 shadow">
               <div className="card-body p-4">
-                <div className="text-2xl font-bold">
-                  {user.visitCount ?? 0}
-                </div>
+                <div className="text-2xl font-bold">{user.visitCount ?? 0}</div>
                 <p className="text-sm text-base-content/60">Visits</p>
               </div>
             </div>
@@ -223,9 +222,7 @@ export default function AdminUserDetailPage() {
                                 {order.orderNumber ?? order._id.slice(-8)}
                               </span>
                             </td>
-                            <td className="text-center text-sm">
-                              {itemCount}
-                            </td>
+                            <td className="text-center text-sm">{itemCount}</td>
                             <td className="text-right font-medium">
                               {formatCents(total)}
                             </td>

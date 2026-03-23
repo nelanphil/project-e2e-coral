@@ -106,7 +106,11 @@ function InventoryLogContent() {
                       <span className="badge badge-sm">{log.reason}</span>
                     </td>
                     <td className="max-w-xs truncate">{log.notes || "—"}</td>
-                    <td>{log.performedBy?.name ?? "System"}</td>
+                    <td>
+                      {[log.performedBy?.firstName, log.performedBy?.lastName]
+                        .filter(Boolean)
+                        .join(" ") || "System"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -149,7 +153,11 @@ function InventoryLogContent() {
                       </span>
                     </td>
                     <td className="max-w-xs truncate">{log.notes || "—"}</td>
-                    <td>{log.changedBy?.name ?? "System"}</td>
+                    <td>
+                      {[log.changedBy?.firstName, log.changedBy?.lastName]
+                        .filter(Boolean)
+                        .join(" ") || "System"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

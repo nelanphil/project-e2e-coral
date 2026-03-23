@@ -2,7 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Eye, Search, Users, ShieldCheck, UserCog } from "lucide-react";
+import {
+  Eye,
+  Search,
+  Users,
+  ShieldCheck,
+  UserCog,
+  UserPlus,
+} from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import type { AdminUsersResponse, AdminUserRoleCounts } from "@/lib/types";
 
@@ -84,7 +91,10 @@ export default function AdminUsersPage() {
         <button
           type="button"
           className={`card bg-base-100 shadow cursor-pointer transition-all text-left ${role === "" ? "ring-2 ring-primary" : "hover:shadow-md"}`}
-          onClick={() => { setRole(""); setPage(1); }}
+          onClick={() => {
+            setRole("");
+            setPage(1);
+          }}
         >
           <div className="card-body p-4">
             <div className="flex items-center justify-between">
@@ -149,6 +159,12 @@ export default function AdminUsersPage() {
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
             </label>
+            <Link
+              href="/admin/users/new"
+              className="btn btn-primary btn-sm gap-1"
+            >
+              <UserPlus className="size-4" /> Create User
+            </Link>
           </div>
         </div>
       </div>
@@ -165,7 +181,10 @@ export default function AdminUsersPage() {
               <select
                 className="select select-bordered select-xs"
                 value={limit}
-                onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
               >
                 <option value={50}>50 / page</option>
                 <option value={100}>100 / page</option>
@@ -181,7 +200,10 @@ export default function AdminUsersPage() {
                 >
                   &laquo;
                 </button>
-                <button type="button" className="join-item btn btn-xs btn-disabled">
+                <button
+                  type="button"
+                  className="join-item btn btn-xs btn-disabled"
+                >
                   {page} / {totalPages || 1}
                 </button>
                 <button
@@ -209,7 +231,8 @@ export default function AdminUsersPage() {
               <table className="table table-sm">
                 <thead>
                   <tr>
-                    <th>Name</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
                     <th>Email</th>
                     <th className="text-center">Role</th>
                     <th className="text-right">Points</th>
@@ -223,21 +246,37 @@ export default function AdminUsersPage() {
                     <tr key={user._id} className="hover">
                       <td>
                         <span className="font-medium text-sm">
-                          {user.name || (
-                            <span className="text-base-content/40 italic">No name</span>
+                          {user.firstName || (
+                            <span className="text-base-content/40 italic">
+                              —
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="font-medium text-sm">
+                          {user.lastName || (
+                            <span className="text-base-content/40 italic">
+                              —
+                            </span>
                           )}
                         </span>
                       </td>
                       <td>
                         <span className="text-sm">
                           {user.email || (
-                            <span className="text-base-content/40 italic">&mdash;</span>
+                            <span className="text-base-content/40 italic">
+                              &mdash;
+                            </span>
                           )}
                         </span>
                       </td>
                       <td className="text-center">
-                        <span className={`badge badge-sm ${getRoleBadge(user.role)}`}>
-                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        <span
+                          className={`badge badge-sm ${getRoleBadge(user.role)}`}
+                        >
+                          {user.role.charAt(0).toUpperCase() +
+                            user.role.slice(1)}
                         </span>
                       </td>
                       <td className="text-right font-mono text-sm">
@@ -246,11 +285,14 @@ export default function AdminUsersPage() {
                       <td>
                         {user.lastVisit ? (
                           <div className="text-sm">
-                            {new Date(user.lastVisit).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
+                            {new Date(user.lastVisit).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
+                            )}
                           </div>
                         ) : (
                           <span className="text-base-content/40">&mdash;</span>
@@ -258,11 +300,14 @@ export default function AdminUsersPage() {
                       </td>
                       <td>
                         <div className="text-sm">
-                          {new Date(user.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {new Date(user.createdAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
                         </div>
                       </td>
                       <td className="text-center">
@@ -293,7 +338,10 @@ export default function AdminUsersPage() {
                 >
                   &laquo;
                 </button>
-                <button type="button" className="join-item btn btn-xs btn-disabled">
+                <button
+                  type="button"
+                  className="join-item btn btn-xs btn-disabled"
+                >
                   {page} / {totalPages || 1}
                 </button>
                 <button

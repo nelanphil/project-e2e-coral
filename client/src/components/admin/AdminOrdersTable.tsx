@@ -54,9 +54,9 @@ function computeSavings(order: AdminOrder): number {
 
 function getCustomerDisplay(order: AdminOrder) {
   const user = order.user;
-  if (user && user.name) {
+  if (user && (user.firstName || user.lastName)) {
     return {
-      name: user.name,
+      name: [user.firstName, user.lastName].filter(Boolean).join(" "),
       email: user.email,
       isGuest: user.role === "guest",
     };
@@ -149,14 +149,16 @@ export default function AdminOrdersTable({ orders, loading }: Props) {
                 </td>
                 <td className="text-center">
                   <span
-                    className={`badge badge-sm ${getPaymentBadge(order.paymentStatus)}`}>
+                    className={`badge badge-sm ${getPaymentBadge(order.paymentStatus)}`}
+                  >
                     {(order.paymentStatus ?? "unpaid").charAt(0).toUpperCase() +
                       (order.paymentStatus ?? "unpaid").slice(1)}
                   </span>
                 </td>
                 <td className="text-center">
                   <span
-                    className={`badge badge-sm ${getStatusBadge(order.status)}`}>
+                    className={`badge badge-sm ${getStatusBadge(order.status)}`}
+                  >
                     {order.status.charAt(0).toUpperCase() +
                       order.status.slice(1)}
                   </span>
@@ -180,7 +182,8 @@ export default function AdminOrdersTable({ orders, loading }: Props) {
                   <Link
                     href={`/admin/orders/${order._id}`}
                     className="btn btn-ghost btn-xs btn-square"
-                    aria-label="View order details">
+                    aria-label="View order details"
+                  >
                     <Eye className="size-4" />
                   </Link>
                 </td>

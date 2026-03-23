@@ -55,7 +55,9 @@ function LoginContent() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && <p className="text-error text-sm">{error}</p>}
             <div>
-              <label className="label" htmlFor="email">Email</label>
+              <label className="label" htmlFor="email">
+                Email
+              </label>
               <input
                 id="email"
                 type="email"
@@ -66,7 +68,9 @@ function LoginContent() {
               />
             </div>
             <div>
-              <label className="label" htmlFor="password">Password</label>
+              <label className="label" htmlFor="password">
+                Password
+              </label>
               <div className="relative">
                 <input
                   id="password"
@@ -83,13 +87,31 @@ function LoginContent() {
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-5 h-5"
+                    >
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
                       <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
                       <line x1="1" y1="1" x2="23" y2="23" />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-5 h-5"
+                    >
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -97,12 +119,26 @@ function LoginContent() {
                 </button>
               </div>
             </div>
-            <button type="submit" className="btn btn-primary w-full" disabled={loading}>
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={loading}
+            >
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
           <p className="text-center text-sm text-base-content/80 mt-2">
-            Don’t have an account? <Link href={redirectTo ? `/auth/sign-up?redirect=${encodeURIComponent(redirectTo)}` : "/auth/sign-up"} className="link">Sign up</Link>
+            Don’t have an account?{" "}
+            <Link
+              href={
+                redirectTo
+                  ? `/auth/sign-up?redirect=${encodeURIComponent(redirectTo)}`
+                  : "/auth/sign-up"
+              }
+              className="link"
+            >
+              Sign up
+            </Link>
           </p>
         </div>
       </div>

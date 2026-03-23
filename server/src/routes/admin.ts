@@ -1,5 +1,7 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 import Stripe from "stripe";
 import { requireAdmin, type AuthRequest } from "../middleware/auth.js";
 import { Order } from "../models/Order.js";
@@ -21,6 +23,7 @@ import { verifyStripePayment } from "./orders.js";
 
 import { Discount } from "../models/Discount.js";
 import { TickerItem, type ITickerItem } from "../models/TickerItem.js";
+import { sendTemporaryPasswordEmail } from "../services/email.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
@@ -31,7 +34,7 @@ adminRouter.use(requireAdmin);
 
 async function buildAdminOrderResponse(orderId: string) {
   const order = await Order.findById(orderId)
-    .populate("user", "name email role")
+    .populate("user", "firstName lastName email role")
     .populate("lineItems.product", "name slug images price")
     .lean();
 
@@ -39,7 +42,7 @@ async function buildAdminOrderResponse(orderId: string) {
 
   const statusHistory = await OrderStatusLog.find({ order: orderId })
     .sort({ createdAt: 1 })
-    .populate("performedBy", "name email")
+    .populate("performedBy", "firstName lastName email")
     .lean();
 
   return {
@@ -275,7 +278,7 @@ adminRouter.get("/orders", async (req, res) => {
       const regex = { $regex: search, $options: "i" };
       // Find user IDs that match the search by name or email
       const matchingUsers = await User.find({
-        $or: [{ name: regex }, { email: regex }],
+        $or: [{ firstName: regex }, { lastName: regex }, { email: regex }],
       })
         .select("_id")
         .lean();
@@ -296,7 +299,7 @@ adminRouter.get("/orders", async (req, res) => {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate("user", "name email role")
+        .populate("user", "firstName lastName email role")
         .populate("lineItems.product", "name slug images")
         .lean(),
       Order.countDocuments(filter),
@@ -588,34 +591,32 @@ adminRouter.get("/inventory", async (req, res) => {
       });
     }
 
-    pipeline.push(
-      {
-        $facet: {
-          metadata: [{ $count: "total" }],
-          inventory: [
-            { $sort: sortObj },
-            { $skip: (page - 1) * limit },
-            { $limit: limit },
-            {
-              $project: {
-                _id: 1,
-                product: {
-                  _id: "$product._id",
-                  name: "$product.name",
-                  slug: "$product.slug",
-                  price: "$product.price",
-                  cost: "$product.cost",
-                  isActive: "$product.isActive",
-                  deletedAt: "$product.deletedAt",
-                },
-                quantity: 1,
-                updatedAt: 1,
+    pipeline.push({
+      $facet: {
+        metadata: [{ $count: "total" }],
+        inventory: [
+          { $sort: sortObj },
+          { $skip: (page - 1) * limit },
+          { $limit: limit },
+          {
+            $project: {
+              _id: 1,
+              product: {
+                _id: "$product._id",
+                name: "$product.name",
+                slug: "$product.slug",
+                price: "$product.price",
+                cost: "$product.cost",
+                isActive: "$product.isActive",
+                deletedAt: "$product.deletedAt",
               },
+              quantity: 1,
+              updatedAt: 1,
             },
-          ],
-        },
+          },
+        ],
       },
-    );
+    });
 
     const result = await Inventory.aggregate(pipeline);
     const metadata = result[0]?.metadata?.[0];
@@ -677,7 +678,7 @@ adminRouter.get("/inventory/:productId/logs", async (req, res) => {
   try {
     const { productId } = req.params;
     const logs = await InventoryLog.find({ product: productId })
-      .populate("performedBy", "name email")
+      .populate("performedBy", "firstName lastName email")
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();
@@ -691,7 +692,7 @@ adminRouter.get("/products/:productId/price-logs", async (req, res) => {
   try {
     const { productId } = req.params;
     const logs = await PriceLog.find({ product: productId })
-      .populate("changedBy", "name email")
+      .populate("changedBy", "firstName lastName email")
       .sort({ createdAt: -1 })
       .limit(100)
       .lean();
@@ -820,7 +821,7 @@ adminRouter.put("/rewards", async (req, res) => {
 adminRouter.get("/rewards/users", async (_req, res) => {
   try {
     const users = await User.find({ pointsBalance: { $gt: 0 } })
-      .select("email name pointsBalance lastVisit")
+      .select("email firstName lastName pointsBalance lastVisit")
       .sort({ pointsBalance: -1 })
       .lean();
     res.json({ users });
@@ -838,9 +839,9 @@ adminRouter.get("/rewards/logs", async (req, res) => {
     const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);
     const skip = (page - 1) * limit;
     const logs = await RewardLog.find()
-      .populate("user", "email name")
+      .populate("user", "email firstName lastName")
       .populate("order", "_id")
-      .populate("performedBy", "email name")
+      .populate("performedBy", "email firstName lastName")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -923,12 +924,18 @@ adminRouter.get("/users", async (req, res) => {
     }
     if (search) {
       const regex = { $regex: search, $options: "i" };
-      filter.$or = [{ name: regex }, { email: regex }];
+      filter.$or = [
+        { firstName: regex },
+        { lastName: regex },
+        { email: regex },
+      ];
     }
 
     const [users, total, roleCounts] = await Promise.all([
       User.find(filter)
-        .select("email name role pointsBalance lastVisit createdAt")
+        .select(
+          "email firstName lastName role pointsBalance lastVisit createdAt",
+        )
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
@@ -953,7 +960,12 @@ adminRouter.get("/users", async (req, res) => {
       ]),
     ]);
 
-    const counts = roleCounts[0] ?? { total: 0, customer: 0, admin: 0, guest: 0 };
+    const counts = roleCounts[0] ?? {
+      total: 0,
+      customer: 0,
+      admin: 0,
+      guest: 0,
+    };
     delete counts._id;
 
     res.json({ users, total, page, limit, counts });
@@ -965,7 +977,9 @@ adminRouter.get("/users", async (req, res) => {
 adminRouter.get("/users/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .select("email name role pointsBalance visitCount lastVisit ipAddress userAgent referrer createdAt updatedAt")
+      .select(
+        "email firstName lastName role pointsBalance visitCount lastVisit ipAddress userAgent referrer createdAt updatedAt",
+      )
       .lean();
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -973,7 +987,9 @@ adminRouter.get("/users/:id", async (req, res) => {
     }
 
     const orders = await Order.find({ user: req.params.id })
-      .select("orderNumber status paymentStatus lineItems taxAmount shippingAmount discountAmountCents pointsDiscountCents createdAt")
+      .select(
+        "orderNumber status paymentStatus lineItems taxAmount shippingAmount discountAmountCents pointsDiscountCents createdAt",
+      )
       .populate("lineItems.product", "name slug images")
       .sort({ createdAt: -1 })
       .limit(50)
@@ -983,7 +999,8 @@ adminRouter.get("/users/:id", async (req, res) => {
 
     const totalSpent = orders.reduce((sum, o) => {
       const lineTotal = o.lineItems.reduce(
-        (s: number, li: { price: number; quantity: number }) => s + li.price * li.quantity,
+        (s: number, li: { price: number; quantity: number }) =>
+          s + li.price * li.quantity,
         0,
       );
       return (
@@ -999,6 +1016,93 @@ adminRouter.get("/users/:id", async (req, res) => {
     res.json({ user, orders, totalOrders, totalSpent });
   } catch {
     res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+// ─── Create User ─────────────────────────────────────────────────────────────
+
+adminRouter.post("/users", async (req: AuthRequest, res) => {
+  try {
+    const { email, firstName, lastName, role } = req.body as {
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      role?: string;
+    };
+
+    const trimmedEmail = (email ?? "").trim().toLowerCase();
+    const trimmedFirstName = (firstName ?? "").trim();
+    const trimmedLastName = (lastName ?? "").trim();
+
+    if (!trimmedEmail || !trimmedFirstName || !trimmedLastName) {
+      res
+        .status(400)
+        .json({ error: "First name, last name, and email are required" });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      res.status(400).json({ error: "Invalid email format" });
+      return;
+    }
+
+    const allowedRoles = ["customer", "admin"];
+    const userRole = allowedRoles.includes(role ?? "") ? role! : "customer";
+
+    const existing = await User.findOne({ email: trimmedEmail });
+    if (existing && existing.role !== "guest") {
+      res.status(409).json({ error: "A user with this email already exists" });
+      return;
+    }
+
+    const temporaryPassword = crypto.randomBytes(16).toString("base64url");
+    const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+
+    let newUser;
+    if (existing && existing.role === "guest") {
+      // Upgrade the existing guest record instead of inserting a duplicate
+      existing.firstName = trimmedFirstName;
+      existing.lastName = trimmedLastName;
+      existing.role = userRole as "customer" | "admin";
+      existing.passwordHash = passwordHash;
+      await existing.save();
+      newUser = existing;
+    } else {
+      newUser = await User.create({
+        email: trimmedEmail,
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        role: userRole,
+        passwordHash,
+      });
+    }
+
+    let emailSent = false;
+    try {
+      emailSent = await sendTemporaryPasswordEmail(
+        trimmedEmail,
+        trimmedFirstName,
+        temporaryPassword,
+      );
+    } catch (emailErr) {
+      console.error("Failed to send temporary password email:", emailErr);
+    }
+
+    res.status(201).json({
+      user: {
+        _id: newUser._id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        role: newUser.role,
+        pointsBalance: newUser.pointsBalance,
+        createdAt: newUser.createdAt,
+      },
+      emailSent,
+    });
+  } catch (err) {
+    console.error("Create user error:", err);
+    res.status(500).json({ error: "Failed to create user" });
   }
 });
 
@@ -1227,7 +1331,7 @@ adminRouter.get("/discounts/:id/usage", async (req, res) => {
   try {
     const { id } = req.params;
     const discount = (await Discount.findById(id)
-      .populate("usageLog.userId", "email name")
+      .populate("usageLog.userId", "email firstName lastName")
       .populate("usageLog.orderId", "_id createdAt")
       .lean()) as { usageLog?: unknown[]; usedCount?: number } | null;
     if (!discount) {
@@ -1264,7 +1368,11 @@ adminRouter.post("/ticker-items", async (req, res) => {
       .sort({ sortOrder: -1 })
       .lean<ITickerItem | null>();
     const sortOrder = last ? (last.sortOrder ?? 0) + 1 : 0;
-    const item = await TickerItem.create({ text: text.trim(), deletedAt: null, sortOrder });
+    const item = await TickerItem.create({
+      text: text.trim(),
+      deletedAt: null,
+      sortOrder,
+    });
     res.status(201).json({ item });
   } catch {
     res.status(500).json({ error: "Failed to create ticker item" });
@@ -1320,8 +1428,12 @@ adminRouter.patch("/ticker-items/:id/move", async (req, res) => {
     const currentOrder = current.sortOrder ?? idx;
     const siblingOrder = sibling.sortOrder ?? swapIdx;
     await Promise.all([
-      TickerItem.findByIdAndUpdate(current._id, { $set: { sortOrder: siblingOrder } }),
-      TickerItem.findByIdAndUpdate(sibling._id, { $set: { sortOrder: currentOrder } }),
+      TickerItem.findByIdAndUpdate(current._id, {
+        $set: { sortOrder: siblingOrder },
+      }),
+      TickerItem.findByIdAndUpdate(sibling._id, {
+        $set: { sortOrder: currentOrder },
+      }),
     ]);
     const updated = await TickerItem.find()
       .sort({ sortOrder: 1, createdAt: 1 })

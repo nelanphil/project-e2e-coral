@@ -30,10 +30,11 @@ function getUserAgent(req: Request): string | undefined {
 }
 
 authRouter.post("/sign-up", async (req, res) => {
-  const { email, password, name } = req.body as {
+  const { email, password, firstName, lastName } = req.body as {
     email?: string;
     password?: string;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
   };
   if (!email?.trim() || !password) {
     res.status(400).json({ error: "Email and password required" });
@@ -51,7 +52,8 @@ authRouter.post("/sign-up", async (req, res) => {
     const user = await User.create({
       email: email.trim().toLowerCase(),
       passwordHash,
-      name: (name ?? "").trim(),
+      firstName: (firstName ?? "").trim(),
+      lastName: (lastName ?? "").trim(),
       role: "customer",
       ipAddress,
       userAgent,
@@ -64,7 +66,8 @@ authRouter.post("/sign-up", async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
       },
     });
@@ -112,7 +115,8 @@ authRouter.post("/login", async (req, res) => {
     user: {
       _id: updatedUser!._id,
       email: updatedUser!.email,
-      name: updatedUser!.name,
+      firstName: updatedUser!.firstName,
+      lastName: updatedUser!.lastName,
       role: updatedUser!.role,
     },
   });
@@ -153,7 +157,8 @@ authRouter.get("/me", requireAuth, async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
       },
     });
@@ -169,7 +174,9 @@ authRouter.post("/check-email", async (req, res) => {
   const user = await User.findOne({
     email: email.trim().toLowerCase(),
     role: { $ne: "guest" },
-  }).select("_id").lean();
+  })
+    .select("_id")
+    .lean();
   res.json({ exists: !!user });
 });
 
@@ -203,7 +210,8 @@ authRouter.post("/guest", async (req, res) => {
       user = await User.create({
         cookieId: cookieId.trim(),
         role: "guest",
-        name: "",
+        firstName: "",
+        lastName: "",
         ipAddress,
         userAgent,
         referrer,

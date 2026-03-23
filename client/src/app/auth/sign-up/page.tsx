@@ -8,7 +8,8 @@ import { useAuth } from "@/lib/auth-context";
 function SignUpContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -29,7 +30,7 @@ function SignUpContent() {
       const res = await fetch(`${baseUrl}/api/auth/sign-up`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, firstName, lastName }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -54,17 +55,33 @@ function SignUpContent() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && <p className="text-error text-sm">{error}</p>}
             <div>
-              <label className="label" htmlFor="name">Name</label>
+              <label className="label" htmlFor="firstName">
+                First Name
+              </label>
               <input
-                id="name"
+                id="firstName"
                 type="text"
                 className="input input-bordered w-full"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
               />
             </div>
             <div>
-              <label className="label" htmlFor="email">Email</label>
+              <label className="label" htmlFor="lastName">
+                Last Name
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                className="input input-bordered w-full"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="email">
+                Email
+              </label>
               <input
                 id="email"
                 type="email"
@@ -75,7 +92,9 @@ function SignUpContent() {
               />
             </div>
             <div>
-              <label className="label" htmlFor="password">Password</label>
+              <label className="label" htmlFor="password">
+                Password
+              </label>
               <input
                 id="password"
                 type="password"
@@ -85,13 +104,24 @@ function SignUpContent() {
                 required
               />
             </div>
-            <button type="submit" className="btn btn-primary w-full" disabled={loading}>
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={loading}
+            >
               {loading ? "Signing up…" : "Sign up"}
             </button>
           </form>
           <p className="text-center text-sm text-base-content/80 mt-2">
             Already have an account?{" "}
-            <Link href={redirectTo ? `/auth/login?redirect=${encodeURIComponent(redirectTo)}` : "/auth/login"} className="link">
+            <Link
+              href={
+                redirectTo
+                  ? `/auth/login?redirect=${encodeURIComponent(redirectTo)}`
+                  : "/auth/login"
+              }
+              className="link"
+            >
               Log in
             </Link>
           </p>

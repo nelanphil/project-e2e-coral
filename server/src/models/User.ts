@@ -4,7 +4,8 @@ export interface IUser {
   _id: mongoose.Types.ObjectId;
   email?: string;
   passwordHash?: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: "customer" | "admin" | "guest";
   pointsBalance?: number;
   cookieId?: string;
@@ -21,8 +22,13 @@ const userSchema = new Schema<IUser>(
   {
     email: { type: String, required: false, unique: true, sparse: true },
     passwordHash: { type: String, required: false },
-    name: { type: String, default: "" },
-    role: { type: String, enum: ["customer", "admin", "guest"], default: "customer" },
+    firstName: { type: String, default: "" },
+    lastName: { type: String, default: "" },
+    role: {
+      type: String,
+      enum: ["customer", "admin", "guest"],
+      default: "customer",
+    },
     pointsBalance: { type: Number, default: 0 },
     cookieId: { type: String, sparse: true },
     ipAddress: { type: String },
@@ -31,14 +37,18 @@ const userSchema = new Schema<IUser>(
     visitCount: { type: Number, default: 1 },
     lastVisit: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Validation: customer and admin must have email and passwordHash
 userSchema.pre("save", function (next) {
   if (this.isNew && (this.role === "customer" || this.role === "admin")) {
     if (!this.email || !this.passwordHash) {
-      return next(new Error("Email and password are required for customer and admin roles"));
+      return next(
+        new Error(
+          "Email and password are required for customer and admin roles",
+        ),
+      );
     }
   }
   next();

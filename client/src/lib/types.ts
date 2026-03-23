@@ -1,7 +1,8 @@
 export interface UserInfo {
   _id: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: string;
 }
 
@@ -97,7 +98,12 @@ export interface InventoryLog {
   change: number;
   reason: "manual" | "sale" | "restock" | "adjustment";
   notes?: string;
-  performedBy?: { _id: string; name: string; email: string };
+  performedBy?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   createdAt: string;
 }
 
@@ -156,7 +162,12 @@ export interface Discount {
   firstOrderOnly: boolean;
   applicableProducts: { _id: string; name: string; slug: string }[];
   usageLog: {
-    userId?: { _id: string; email: string; name: string };
+    userId?: {
+      _id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    };
     cookieId?: string;
     orderId: { _id: string; createdAt: string } | string;
     usedAt: string;
@@ -178,7 +189,12 @@ export interface PriceLog {
     | "correction"
     | "other";
   notes?: string;
-  changedBy?: { _id: string; name: string; email: string };
+  changedBy?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   createdAt: string;
 }
 
@@ -186,7 +202,8 @@ export interface PriceLog {
 
 export interface AdminOrderUser {
   _id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: string;
 }
@@ -211,7 +228,8 @@ export interface AdminOrderStatusHistoryEntry {
   notes?: string;
   performedBy?: {
     _id: string;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
   } | null;
   createdAt: string;
@@ -293,7 +311,8 @@ export interface AdminOrderDetailResponse {
 export interface AdminUser {
   _id: string;
   email?: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: string;
   pointsBalance: number;
   lastVisit?: string;
@@ -318,7 +337,8 @@ export interface AdminUsersResponse {
 export interface AdminUserDetail {
   _id: string;
   email?: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   role: string;
   pointsBalance: number;
   visitCount?: number;
@@ -335,4 +355,16 @@ export interface AdminUserDetailResponse {
   orders: AdminOrder[];
   totalOrders: number;
   totalSpent: number;
+}
+
+export interface CreateUserPayload {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "customer" | "admin";
+}
+
+export interface CreateUserResponse {
+  user: AdminUser;
+  emailSent: boolean;
 }

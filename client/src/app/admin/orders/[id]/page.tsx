@@ -84,7 +84,8 @@ function addressesMatch(a?: OrderAddress, b?: OrderAddress) {
     normalizeAddressValue(a.line2) === normalizeAddressValue(b.line2) &&
     normalizeAddressValue(a.city) === normalizeAddressValue(b.city) &&
     normalizeAddressValue(a.state) === normalizeAddressValue(b.state) &&
-    normalizeAddressValue(a.postalCode) === normalizeAddressValue(b.postalCode) &&
+    normalizeAddressValue(a.postalCode) ===
+      normalizeAddressValue(b.postalCode) &&
     normalizeAddressValue(a.country) === normalizeAddressValue(b.country)
   );
 }
@@ -155,7 +156,9 @@ export default function AdminOrderDetailPage() {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ trackingNumber: trackingInput.trim() || null }),
+          body: JSON.stringify({
+            trackingNumber: trackingInput.trim() || null,
+          }),
         },
       );
       if (!res.ok) throw new Error("Failed to update tracking");
@@ -270,7 +273,10 @@ export default function AdminOrderDetailPage() {
 
   const customer = order.user;
   const isGuest = !customer || customer.role === "guest";
-  const customerName = customer?.name || order.email || "Unknown";
+  const customerName =
+    [customer?.firstName, customer?.lastName].filter(Boolean).join(" ") ||
+    order.email ||
+    "Unknown";
   const customerEmail = customer?.email || order.email || "";
   const canRefund =
     order.status !== "refunded" &&
@@ -297,7 +303,8 @@ export default function AdminOrderDetailPage() {
           <button
             type="button"
             className="btn btn-ghost btn-xs"
-            onClick={() => setError("")}>
+            onClick={() => setError("")}
+          >
             ✕
           </button>
         </div>
@@ -332,7 +339,8 @@ export default function AdminOrderDetailPage() {
                     type="button"
                     className="btn btn-error btn-sm sm:self-end"
                     onClick={() => setShowRefundConfirm(true)}
-                    disabled={refunding}>
+                    disabled={refunding}
+                  >
                     Refund Order
                   </button>
                 ) : (
@@ -345,10 +353,10 @@ export default function AdminOrderDetailPage() {
                             Are you sure you want to issue a full refund?
                           </p>
                           <p className="text-base-content/60 mt-1">
-                            This will refund {formatCents(total)} to the customer
-                            via Stripe, reverse any earned reward points, return
-                            spent points, and restore inventory. This action
-                            cannot be undone.
+                            This will refund {formatCents(total)} to the
+                            customer via Stripe, reverse any earned reward
+                            points, return spent points, and restore inventory.
+                            This action cannot be undone.
                           </p>
                         </div>
                       </div>
@@ -357,7 +365,8 @@ export default function AdminOrderDetailPage() {
                           type="button"
                           className="btn btn-error btn-sm"
                           onClick={handleRefund}
-                          disabled={refunding}>
+                          disabled={refunding}
+                        >
                           {refunding ? (
                             <span className="loading loading-spinner loading-xs" />
                           ) : (
@@ -368,7 +377,8 @@ export default function AdminOrderDetailPage() {
                           type="button"
                           className="btn btn-ghost btn-sm"
                           onClick={() => setShowRefundConfirm(false)}
-                          disabled={refunding}>
+                          disabled={refunding}
+                        >
                           Cancel
                         </button>
                       </div>
@@ -523,7 +533,8 @@ export default function AdminOrderDetailPage() {
                     type="button"
                     className="btn btn-primary btn-sm"
                     onClick={handleTrackingSave}
-                    disabled={trackingUpdating}>
+                    disabled={trackingUpdating}
+                  >
                     {trackingUpdating ? (
                       <span className="loading loading-spinner loading-xs" />
                     ) : (
@@ -567,7 +578,8 @@ export default function AdminOrderDetailPage() {
                       className="select select-bordered select-sm"
                       value={order.status}
                       onChange={(e) => handleStatusChange(e.target.value)}
-                      disabled={statusUpdating || order.status === "refunded"}>
+                      disabled={statusUpdating || order.status === "refunded"}
+                    >
                       <option value="pending">Pending</option>
                       <option value="processing">Processing</option>
                       {order.status === "paid" && (
@@ -587,7 +599,9 @@ export default function AdminOrderDetailPage() {
                     </span>
                   </div>
                   {statusUpdating && (
-                    <div className="text-xs text-base-content/60">Updating status...</div>
+                    <div className="text-xs text-base-content/60">
+                      Updating status...
+                    </div>
                   )}
                 </div>
 
@@ -604,19 +618,28 @@ export default function AdminOrderDetailPage() {
                       {statusHistory.map((entry) => (
                         <li
                           key={entry._id}
-                          className="rounded-box border border-base-300 p-2">
+                          className="rounded-box border border-base-300 p-2"
+                        >
                           <div className="flex items-center justify-between gap-2 text-xs text-base-content/60">
                             <span>
-                              {new Date(entry.createdAt).toLocaleString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                              {new Date(entry.createdAt).toLocaleString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
                             </span>
                             <span className="font-medium">
-                              {entry.performedBy?.name ||
+                              {[
+                                entry.performedBy?.firstName,
+                                entry.performedBy?.lastName,
+                              ]
+                                .filter(Boolean)
+                                .join(" ") ||
                                 entry.performedBy?.email ||
                                 "System"}
                             </span>
@@ -647,7 +670,8 @@ export default function AdminOrderDetailPage() {
                 <div className="flex items-center justify-between">
                   <span>Status</span>
                   <span
-                    className={`badge badge-sm ${getPaymentBadge(order.paymentStatus)}`}>
+                    className={`badge badge-sm ${getPaymentBadge(order.paymentStatus)}`}
+                  >
                     {(order.paymentStatus ?? "unpaid").charAt(0).toUpperCase() +
                       (order.paymentStatus ?? "unpaid").slice(1)}
                   </span>
@@ -658,8 +682,8 @@ export default function AdminOrderDetailPage() {
                     <div className="flex items-start gap-2">
                       <span className="font-mono text-xs break-all text-right">
                         {visiblePaymentFields.stripePi
-                        ? order.stripePaymentIntentId
-                        : maskSensitiveValue(order.stripePaymentIntentId)}
+                          ? order.stripePaymentIntentId
+                          : maskSensitiveValue(order.stripePaymentIntentId)}
                       </span>
                       <button
                         type="button"
@@ -670,7 +694,8 @@ export default function AdminOrderDetailPage() {
                           visiblePaymentFields.stripePi
                             ? "Hide Stripe payment intent ID"
                             : "Show Stripe payment intent ID"
-                        }>
+                        }
+                      >
                         {visiblePaymentFields.stripePi ? (
                           <EyeOff className="size-4" />
                         ) : (
@@ -688,8 +713,8 @@ export default function AdminOrderDetailPage() {
                     <div className="flex items-start gap-2">
                       <span className="font-mono text-xs break-all text-right">
                         {visiblePaymentFields.stripeSession
-                        ? order.stripeCheckoutSessionId
-                        : maskSensitiveValue(order.stripeCheckoutSessionId)}
+                          ? order.stripeCheckoutSessionId
+                          : maskSensitiveValue(order.stripeCheckoutSessionId)}
                       </span>
                       <button
                         type="button"
@@ -702,7 +727,8 @@ export default function AdminOrderDetailPage() {
                           visiblePaymentFields.stripeSession
                             ? "Hide Stripe checkout session ID"
                             : "Show Stripe checkout session ID"
-                        }>
+                        }
+                      >
                         {visiblePaymentFields.stripeSession ? (
                           <EyeOff className="size-4" />
                         ) : (
@@ -718,8 +744,8 @@ export default function AdminOrderDetailPage() {
                     <div className="flex items-start gap-2">
                       <span className="font-mono text-xs break-all text-right">
                         {visiblePaymentFields.paypal
-                        ? order.paypalOrderId
-                        : maskSensitiveValue(order.paypalOrderId)}
+                          ? order.paypalOrderId
+                          : maskSensitiveValue(order.paypalOrderId)}
                       </span>
                       <button
                         type="button"
@@ -730,7 +756,8 @@ export default function AdminOrderDetailPage() {
                           visiblePaymentFields.paypal
                             ? "Hide PayPal order ID"
                             : "Show PayPal order ID"
-                        }>
+                        }
+                      >
                         {visiblePaymentFields.paypal ? (
                           <EyeOff className="size-4" />
                         ) : (

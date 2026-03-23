@@ -30,9 +30,21 @@ type PopulatedOrder = {
   _id: unknown;
   orderNumber?: string;
   email?: string;
-  user?: { _id: unknown; email?: string; name?: string } | null;
+  user?: {
+    _id: unknown;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+  } | null;
   lineItems: PopulatedLineItem[];
-  shippingAddress: { line1: string; line2?: string; city: string; state: string; postalCode: string; country: string };
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
   taxAmount?: number;
   shippingAmount?: number;
   pointsDiscountCents?: number;
@@ -54,7 +66,11 @@ function buildOrderConfirmationHtml(order: PopulatedOrder): string {
   const pointsDiscountCents = order.pointsDiscountCents ?? 0;
   const discountCents = order.discountAmountCents ?? 0;
   const totalCents =
-    subtotalCents + shippingCents + taxCents - pointsDiscountCents - discountCents;
+    subtotalCents +
+    shippingCents +
+    taxCents -
+    pointsDiscountCents -
+    discountCents;
 
   const rows = order.lineItems
     .map((li) => {
@@ -132,11 +148,13 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
 
   const order = (await Order.findById(orderId)
     .populate("lineItems.product", "name")
-    .populate("user", "email name")
+    .populate("user", "email firstName lastName")
     .lean()) as PopulatedOrder | null;
 
   if (!order) {
-    console.warn(`Order confirmation email skipped: order ${orderId} not found`);
+    console.warn(
+      `Order confirmation email skipped: order ${orderId} not found`,
+    );
     return;
   }
 
@@ -174,9 +192,7 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
 export async function sendOrderAlertToAdmin(orderId: string): Promise<void> {
   const adminTo = process.env.CONFIRM_ORDER_EMAIL_TO?.trim();
   if (!adminTo) {
-    console.warn(
-      "Admin order alert skipped: CONFIRM_ORDER_EMAIL_TO not set",
-    );
+    console.warn("Admin order alert skipped: CONFIRM_ORDER_EMAIL_TO not set");
     return;
   }
 
@@ -190,7 +206,7 @@ export async function sendOrderAlertToAdmin(orderId: string): Promise<void> {
 
   const order = (await Order.findById(orderId)
     .populate("lineItems.product", "name")
-    .populate("user", "email name")
+    .populate("user", "email firstName lastName")
     .lean()) as PopulatedOrder | null;
 
   if (!order) {
@@ -211,7 +227,10 @@ export async function sendOrderAlertToAdmin(orderId: string): Promise<void> {
       "<p>A new order has been paid and requires processing.</p>",
     );
 
-  const recipients = adminTo.split(",").map((e) => e.trim()).filter(Boolean);
+  const recipients = adminTo
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
   if (recipients.length === 0) return;
 
   await transporter.sendMail({
@@ -223,6 +242,60 @@ export async function sendOrderAlertToAdmin(orderId: string): Promise<void> {
   console.log(
     `Admin order alert sent to ${recipients.join(", ")} for order #${orderNumber}`,
   );
+}
+
+/**
+ * Sends a temporary-password email to a newly created user.
+ * Returns true if the email was sent, false if transport is not configured.
+ */
+export async function sendTemporaryPasswordEmail(
+  email: string,
+  name: string,
+  temporaryPassword: string,
+): Promise<boolean> {
+  const transporter = getTransport();
+  if (!transporter) {
+    console.warn(
+      "Temporary password email skipped: email transport not configured",
+    );
+    return false;
+  }
+
+  const clientUrl = (process.env.CLIENT_URL ?? "http://localhost:3000").replace(
+    /\/$/,
+    "",
+  );
+  const loginUrl = `${clientUrl}/auth/login`;
+  const displayName = name || "there";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Your Account Has Been Created</title></head>
+<body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1 style="font-size: 1.25rem;">Welcome to CF Corals!</h1>
+  <p>Hi ${escapeHtml(displayName)},</p>
+  <p>An account has been created for you. You can log in using the temporary password below:</p>
+  <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 1rem 0; text-align: center;">
+    <p style="margin: 0 0 4px 0; font-size: 0.875rem; color: #666;">Your temporary password</p>
+    <p style="margin: 0; font-size: 1.125rem; font-weight: bold; letter-spacing: 0.5px; font-family: monospace;">${escapeHtml(temporaryPassword)}</p>
+  </div>
+  <p>Please log in and change your password as soon as possible.</p>
+  <p style="margin-top: 1.5rem;">
+    <a href="${escapeHtml(loginUrl)}" style="display: inline-block; background: #2563eb; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Log In</a>
+  </p>
+  <p style="margin-top: 1.5rem; color: #666; font-size: 0.875rem;">If you did not expect this email, you can safely ignore it.</p>
+</body>
+</html>`;
+
+  await transporter.sendMail({
+    from: user,
+    to: email,
+    subject: "Your account has been created",
+    html,
+  });
+  console.log(`Temporary password email sent to ${email}`);
+  return true;
 }
 
 /**
@@ -241,4 +314,3 @@ export async function sendOrderEmailsOnce(orderId: string): Promise<void> {
   await sendOrderConfirmation(orderId);
   await sendOrderAlertToAdmin(orderId);
 }
-
