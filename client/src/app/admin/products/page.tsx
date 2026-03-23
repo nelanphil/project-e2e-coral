@@ -53,7 +53,7 @@ async function deleteProduct(productId: string) {
 }
 
 async function restoreProduct(productId: string) {
-    const res = await fetch(`${getBaseUrl()}/api/products/${productId}/restore`, {
+  const res = await fetch(`${getBaseUrl()}/api/products/${productId}/restore`, {
     method: "PATCH",
     headers: authHeaders(),
   });
@@ -63,7 +63,7 @@ async function restoreProduct(productId: string) {
 
 async function toggleVisibility(productId: string, isActive: boolean) {
   const res = await fetch(
-      `${getBaseUrl()}/api/products/${productId}/visibility`,
+    `${getBaseUrl()}/api/products/${productId}/visibility`,
     {
       method: "PATCH",
       headers: authHeaders(),
@@ -173,7 +173,8 @@ function EditablePriceCell({
     <button
       type="button"
       className="text-left hover:underline cursor-pointer decoration-dotted underline-offset-2"
-      onClick={startEditing}>
+      onClick={startEditing}
+    >
       {displayValue}
     </button>
   );
@@ -266,7 +267,8 @@ function CollectionsDropdown({
       <div
         ref={dropdownRef}
         className="fixed z-[9999] w-56 bg-base-100 border border-base-300 rounded-lg shadow-xl p-2 space-y-1 max-h-60 overflow-y-auto"
-        style={{ top: position.top, left: position.left }}>
+        style={{ top: position.top, left: position.left }}
+      >
         {allCollections.length === 0 && (
           <div className="text-xs text-base-content/50 px-2 py-1">
             No collections available
@@ -275,7 +277,8 @@ function CollectionsDropdown({
         {allCollections.map((c) => (
           <label
             key={c._id}
-            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-base-200 cursor-pointer text-sm">
+            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-base-200 cursor-pointer text-sm"
+          >
             <input
               type="checkbox"
               className="checkbox checkbox-xs"
@@ -289,7 +292,8 @@ function CollectionsDropdown({
           <button
             className="btn btn-primary btn-xs w-full mt-1"
             onClick={save}
-            disabled={saving}>
+            disabled={saving}
+          >
             {saving ? (
               <span className="loading loading-spinner loading-xs" />
             ) : (
@@ -306,7 +310,8 @@ function CollectionsDropdown({
         ref={triggerRef}
         type="button"
         className="btn btn-ghost btn-sm sm:btn-xs text-left normal-case gap-1 max-w-[200px] min-h-10 sm:min-h-0"
-        onClick={() => setOpen(!open)}>
+        onClick={() => setOpen(!open)}
+      >
         <span className="truncate">
           {displayNames.length === 0 ? "None" : displayNames.join(", ")}
         </span>
@@ -314,7 +319,8 @@ function CollectionsDropdown({
           xmlns="http://www.w3.org/2000/svg"
           className="h-3 w-3 shrink-0"
           viewBox="0 0 20 20"
-          fill="currentColor">
+          fill="currentColor"
+        >
           <path
             fillRule="evenodd"
             d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
@@ -469,7 +475,8 @@ export default function AdminProductsPage() {
       <button
         type="button"
         className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer select-none"
-        onClick={() => handleSort(columnKey)}>
+        onClick={() => handleSort(columnKey)}
+      >
         {label}
         {sortField === columnKey ? (
           sortOrder === "asc" ? (
@@ -477,7 +484,8 @@ export default function AdminProductsPage() {
               xmlns="http://www.w3.org/2000/svg"
               className="h-3.5 w-3.5"
               viewBox="0 0 20 20"
-              fill="currentColor">
+              fill="currentColor"
+            >
               <path
                 fillRule="evenodd"
                 d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z"
@@ -489,7 +497,8 @@ export default function AdminProductsPage() {
               xmlns="http://www.w3.org/2000/svg"
               className="h-3.5 w-3.5"
               viewBox="0 0 20 20"
-              fill="currentColor">
+              fill="currentColor"
+            >
               <path
                 fillRule="evenodd"
                 d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
@@ -502,7 +511,8 @@ export default function AdminProductsPage() {
             xmlns="http://www.w3.org/2000/svg"
             className="h-3.5 w-3.5 opacity-30"
             viewBox="0 0 20 20"
-            fill="currentColor">
+            fill="currentColor"
+          >
             <path
               fillRule="evenodd"
               d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z"
@@ -594,7 +604,8 @@ export default function AdminProductsPage() {
           <select
             className="select select-bordered select-sm min-h-11 w-auto max-w-20"
             value={pageSize}
-            onChange={(e) => handlePageSizeChange(Number(e.target.value))}>
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+          >
             {PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>
                 {size}
@@ -614,7 +625,8 @@ export default function AdminProductsPage() {
                 })
               }
               disabled={page === 1 || productsLoading}
-              aria-label="Previous page">
+              aria-label="Previous page"
+            >
               «
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -631,7 +643,10 @@ export default function AdminProductsPage() {
                 return (
                   <span key={p} className="contents">
                     {showEllipsis && (
-                      <span className="px-2 py-2 text-base-content/50" aria-hidden>
+                      <span
+                        className="px-2 py-2 text-base-content/50"
+                        aria-hidden
+                      >
                         …
                       </span>
                     )}
@@ -645,7 +660,8 @@ export default function AdminProductsPage() {
                       }
                       disabled={productsLoading}
                       aria-label={`Page ${p}`}
-                      aria-current={page === p ? "page" : undefined}>
+                      aria-current={page === p ? "page" : undefined}
+                    >
                       {p}
                     </button>
                   </span>
@@ -660,7 +676,8 @@ export default function AdminProductsPage() {
                 })
               }
               disabled={page === totalPages || productsLoading}
-              aria-label="Next page">
+              aria-label="Next page"
+            >
               »
             </button>
           </div>
@@ -693,13 +710,15 @@ export default function AdminProductsPage() {
             <button
               role="tab"
               className={`tab ${viewStatus === "active" ? "tab-active" : ""}`}
-              onClick={() => setViewStatus("active")}>
+              onClick={() => setViewStatus("active")}
+            >
               Active
             </button>
             <button
               role="tab"
               className={`tab ${viewStatus === "inactive" ? "tab-active" : ""}`}
-              onClick={() => setViewStatus("inactive")}>
+              onClick={() => setViewStatus("inactive")}
+            >
               Inactive
             </button>
           </div>
@@ -709,7 +728,8 @@ export default function AdminProductsPage() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 16 16"
                 fill="currentColor"
-                className="w-4 h-4 opacity-70">
+                className="w-4 h-4 opacity-70"
+              >
                 <path
                   fillRule="evenodd"
                   d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.755ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
@@ -727,7 +747,8 @@ export default function AdminProductsPage() {
             <select
               className="select select-bordered w-full sm:w-48"
               value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}>
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
               <option value="">All Categories</option>
               {filterDisplayCategories(categories).map((cat) => (
                 <option key={cat._id} value={cat._id}>
@@ -748,7 +769,8 @@ export default function AdminProductsPage() {
               <span>{visibilityError}</span>
               <button
                 className="btn btn-ghost btn-xs"
-                onClick={() => setVisibilityError(null)}>
+                onClick={() => setVisibilityError(null)}
+              >
                 Dismiss
               </button>
             </div>
@@ -778,7 +800,8 @@ export default function AdminProductsPage() {
                   <tr>
                     <td
                       colSpan={8}
-                      className="text-center text-base-content/70 py-8">
+                      className="text-center text-base-content/70 py-8"
+                    >
                       {debouncedSearchQuery.trim()
                         ? `No products match "${debouncedSearchQuery}".`
                         : viewStatus === "inactive"
@@ -800,7 +823,8 @@ export default function AdminProductsPage() {
                             : !isActive
                               ? "opacity-70"
                               : ""
-                        }>
+                        }
+                      >
                         <td>{p.name}</td>
                         <td>
                           {viewStatus === "active" ? (
@@ -837,7 +861,8 @@ export default function AdminProductsPage() {
                             }
                             onChange={(e) =>
                               handleCategoryChange(p._id, e.target.value)
-                            }>
+                            }
+                          >
                             {!getCategoryId(p) && <option value="">—</option>}
                             {filterDisplayCategories(categories).map((cat) => (
                               <option key={cat._id} value={cat._id}>
@@ -880,12 +905,14 @@ export default function AdminProductsPage() {
                               <>
                                 <Link
                                   href={`/admin/products/${p._id}`}
-                                  className="btn btn-ghost btn-sm sm:btn-xs min-h-10 min-w-16 sm:min-w-0">
+                                  className="btn btn-ghost btn-sm sm:btn-xs min-h-10 min-w-16 sm:min-w-0"
+                                >
                                   Edit
                                 </Link>
                                 <button
                                   className="btn btn-ghost btn-sm sm:btn-xs text-error min-h-10 min-w-16 sm:min-w-0"
-                                  onClick={() => openDeleteModal(p)}>
+                                  onClick={() => openDeleteModal(p)}
+                                >
                                   Delete
                                 </button>
                               </>
@@ -893,7 +920,8 @@ export default function AdminProductsPage() {
                               <button
                                 className="btn btn-success btn-sm sm:btn-xs min-h-10 min-w-20 sm:min-w-0"
                                 onClick={() => handleRestore(p._id)}
-                                disabled={actionLoading === p._id}>
+                                disabled={actionLoading === p._id}
+                              >
                                 {actionLoading === p._id ? (
                                   <span className="loading loading-spinner loading-xs" />
                                 ) : (
@@ -934,7 +962,8 @@ export default function AdminProductsPage() {
             <button
               className="btn btn-error"
               onClick={handleDelete}
-              disabled={actionLoading === confirmDelete?.id}>
+              disabled={actionLoading === confirmDelete?.id}
+            >
               {actionLoading === confirmDelete?.id ? (
                 <span className="loading loading-spinner loading-sm" />
               ) : (
