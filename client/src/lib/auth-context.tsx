@@ -22,9 +22,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const getBaseUrl = () =>
-  getBaseUrl();
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
