@@ -3,7 +3,7 @@ import { fetchApi } from "@/lib/api-server";
 import type { ProductsResponse, CategoriesResponse, CollectionsResponse } from "@/lib/types";
 import { filterDisplayCategories } from "@/lib/types";
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3003";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3003";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [

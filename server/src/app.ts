@@ -22,7 +22,24 @@ import { tickerRouter } from "./routes/ticker.js";
 const app = express();
 
 app.use(compression());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? "http://localhost:3003" }));
+
+const allowedOrigins = (process.env.CLIENT_ORIGIN ?? "http://localhost:3003")
+  .split(",")
+  .map((o) => o.trim());
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // allow server-to-server (no origin) and any listed origin
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, origin ?? true);
+      } else {
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      }
+    },
+    credentials: true,
+  }),
+);
 
 app.post(
   "/api/webhooks/stripe",

@@ -1,9 +1,20 @@
 "use client";
 
 import { create } from "zustand";
-import type { Product, Category, Collection, ProductsResponse, CategoriesResponse, CollectionsResponse } from "@/lib/types";
+import type {
+  Product,
+  Category,
+  Collection,
+  ProductsResponse,
+  CategoriesResponse,
+  CollectionsResponse,
+} from "@/lib/types";
 
-const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const getApiUrl = () => {
+  if (typeof window !== "undefined")
+    return process.env.NEXT_PUBLIC_API_URL || "";
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+};
 
 export interface ProductState {
   products: Product[];
@@ -19,7 +30,12 @@ export interface ProductState {
   productDetailLoading: boolean;
   lastFetchedAt: number;
 
-  setProducts: (data: { products: Product[]; total: number; page: number; limit: number }) => void;
+  setProducts: (data: {
+    products: Product[];
+    total: number;
+    page: number;
+    limit: number;
+  }) => void;
   setCategories: (categories: Category[]) => void;
   setCollections: (collections: Collection[]) => void;
   setProductDetail: (product: Product | null) => void;
@@ -29,7 +45,16 @@ export interface ProductState {
   /** Remove a product from the local list (e.g. after soft-delete). */
   removeProductFromList: (productId: string) => void;
 
-  fetchProducts: (params?: { page?: number; limit?: number; category?: string; q?: string; sort?: string; order?: "asc" | "desc"; status?: string; hidden?: string }) => Promise<void>;
+  fetchProducts: (params?: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    q?: string;
+    sort?: string;
+    order?: "asc" | "desc";
+    status?: string;
+    hidden?: string;
+  }) => Promise<void>;
   fetchCategories: () => Promise<void>;
   fetchCollections: () => Promise<void>;
   fetchProductBySlug: (slug: string) => Promise<Product | null>;
@@ -74,7 +99,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
   fetchProducts: async (params = {}) => {
     set({ productsLoading: true });
-    const { page = 1, limit = 12, category, q, sort, order, status, hidden } = params;
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      q,
+      sort,
+      order,
+      status,
+      hidden,
+    } = params;
     const search = new URLSearchParams();
     search.set("page", String(page));
     search.set("limit", String(limit));
@@ -97,7 +131,13 @@ export const useProductStore = create<ProductState>((set, get) => ({
         lastFetchedAt: Date.now(),
       });
     } catch {
-      set({ products: [], total: 0, page: 1, limit: 12, productsLoading: false });
+      set({
+        products: [],
+        total: 0,
+        page: 1,
+        limit: 12,
+        productsLoading: false,
+      });
     }
   },
 
@@ -126,7 +166,9 @@ export const useProductStore = create<ProductState>((set, get) => ({
   fetchProductBySlug: async (slug: string) => {
     set({ productDetailLoading: true, productDetail: null });
     try {
-      const res = await fetch(`${getApiUrl()}/api/products/${encodeURIComponent(slug)}`);
+      const res = await fetch(
+        `${getApiUrl()}/api/products/${encodeURIComponent(slug)}`,
+      );
       if (!res.ok) {
         set({ productDetailLoading: false });
         return null;
@@ -142,6 +184,10 @@ export const useProductStore = create<ProductState>((set, get) => ({
 
   invalidate: async () => {
     set({ lastFetchedAt: 0 });
-    await Promise.all([get().fetchProducts(), get().fetchCategories(), get().fetchCollections()]);
+    await Promise.all([
+      get().fetchProducts(),
+      get().fetchCategories(),
+      get().fetchCollections(),
+    ]);
   },
 }));

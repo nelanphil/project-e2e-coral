@@ -5,7 +5,7 @@ import { getAuthToken, setAuthToken, clearAuthToken } from "@/lib/auth";
 import type { UserInfo } from "@/lib/types";
 
 const getApiUrl = () =>
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 export interface UserState {
   user: UserInfo | null;

@@ -13,7 +13,7 @@ import {
 import { getAuthToken } from "@/lib/auth";
 import type { AdminUsersResponse, AdminUserRoleCounts } from "@/lib/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 const emptyCounts: AdminUserRoleCounts = {
   total: 0,

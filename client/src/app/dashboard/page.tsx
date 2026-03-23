@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getAuthToken } from "@/lib/auth";
 import { Mail, User, Shield, Lock, Eye, EyeOff } from "lucide-react";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 export default function DashboardPage() {
   const { user } = useAuth();

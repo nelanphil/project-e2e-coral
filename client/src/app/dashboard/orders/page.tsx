@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Package, ShoppingBag, ChevronRight } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 interface OrderLineItem {
   product: string | { _id: string; name?: string };

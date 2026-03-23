@@ -14,7 +14,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500];
 const SEARCH_DEBOUNCE_MS = 400;
 
 function getApiUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 }
 
 function getCategoryId(p: Product): string {

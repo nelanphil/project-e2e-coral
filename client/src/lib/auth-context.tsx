@@ -23,7 +23,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const getBaseUrl = () =>
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<UserInfo | null>(null);

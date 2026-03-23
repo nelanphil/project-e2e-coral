@@ -25,7 +25,7 @@ function LoginContent() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
     try {
       const res = await fetch(`${baseUrl}/api/auth/login`, {
         method: "POST",

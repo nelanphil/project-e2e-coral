@@ -8,7 +8,7 @@ import { slugify } from "@/lib/slugify";
 import type { Category } from "@/lib/types";
 
 const api = (path: string, options?: RequestInit) => {
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
   const token = getAuthToken();
   return fetch(`${base}${path}`, {
     ...options,

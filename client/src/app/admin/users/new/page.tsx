@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import type { CreateUserResponse } from "@/lib/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 export default function AdminCreateUserPage() {
   const router = useRouter();

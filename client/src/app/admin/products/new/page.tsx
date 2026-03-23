@@ -17,7 +17,7 @@ import { filterDisplayCategories } from "@/lib/types";
 import type { Collection } from "@/lib/types";
 
 const api = (path: string, options?: RequestInit) => {
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
   const token = getAuthToken();
   return fetch(`${base}${path}`, {
     ...options,

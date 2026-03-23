@@ -25,7 +25,7 @@ export function ProductImageManager({ images, onChange }: Props) {
     setUploading(true);
     setUploadError(null);
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
       const token = getAuthToken();
       const urls: string[] = [];
       for (const file of imageFiles) {

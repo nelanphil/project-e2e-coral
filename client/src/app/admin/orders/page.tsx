@@ -8,7 +8,7 @@ import OrderFilters from "@/components/admin/OrderFilters";
 import OrdersPagination from "@/components/admin/OrdersPagination";
 import AdminOrdersTable from "@/components/admin/AdminOrdersTable";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 const emptyCounts: AdminOrderCounts = {
   total: 0,

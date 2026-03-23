@@ -15,10 +15,12 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_URL || `http://localhost:${API_PORT}`;
     return [
       {
         source: "/api/:path*",
-        destination: `http://localhost:${API_PORT}/api/:path*`,
+        destination: `${apiBase}/api/:path*`,
       },
     ];
   },

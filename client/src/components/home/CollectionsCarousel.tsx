@@ -25,7 +25,7 @@ export function CollectionsCarousel({ collections: initialCollections }: Props) 
 
   const fetchVisibleCollections = useCallback(async () => {
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
       const res = await fetch(`${base}/api/collections`, { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();

@@ -38,7 +38,7 @@ export interface CartState {
   clearCart: () => Promise<void>;
 }
 
-const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4004";
+const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
