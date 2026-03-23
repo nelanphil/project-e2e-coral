@@ -47,7 +47,9 @@ async function run() {
     `   Rule: decimal values or integers < 1000 are treated as dollars\n`,
   );
 
-  const products = await Product.find({ deletedAt: null }).lean();
+  const products = await Product.find({ deletedAt: null }).lean<
+    Array<{ _id: mongoose.Types.ObjectId; name: string; price: number; compareAtPrice?: number; cost: number }>
+  >();
   console.log(`Found ${products.length} non-deleted products.\n`);
 
   let updated = 0;
