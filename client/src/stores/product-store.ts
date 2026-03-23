@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { create } from "zustand";
 import type {
   Product,
@@ -9,12 +9,6 @@ import type {
   CategoriesResponse,
   CollectionsResponse,
 } from "@/lib/types";
-
-const getApiUrl = () => {
-  if (typeof window !== "undefined")
-    return process.env.NEXT_PUBLIC_API_URL || "";
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
-};
 
 export interface ProductState {
   products: Product[];
@@ -120,7 +114,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     if (hidden) search.set("hidden", hidden);
     search.set("_t", String(Date.now()));
     try {
-      const res = await fetch(`${getApiUrl()}/api/products?${search}`);
+      const res = await fetch(`${getBaseUrl()}/api/products?${search}`);
       const data: ProductsResponse = await res.json();
       set({
         products: data.products ?? [],
@@ -144,7 +138,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   fetchCategories: async () => {
     set({ categoriesLoading: true });
     try {
-      const res = await fetch(`${getApiUrl()}/api/categories`);
+      const res = await fetch(`${getBaseUrl()}/api/categories`);
       const data: CategoriesResponse = await res.json();
       set({ categories: data.categories ?? [], categoriesLoading: false });
     } catch {
@@ -155,7 +149,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
   fetchCollections: async () => {
     set({ collectionsLoading: true });
     try {
-      const res = await fetch(`${getApiUrl()}/api/collections`);
+      const res = await fetch(`${getBaseUrl()}/api/collections`);
       const data: CollectionsResponse = await res.json();
       set({ collections: data.collections ?? [], collectionsLoading: false });
     } catch {
@@ -167,7 +161,7 @@ export const useProductStore = create<ProductState>((set, get) => ({
     set({ productDetailLoading: true, productDetail: null });
     try {
       const res = await fetch(
-        `${getApiUrl()}/api/products/${encodeURIComponent(slug)}`,
+        `${getBaseUrl()}/api/products/${encodeURIComponent(slug)}`,
       );
       if (!res.ok) {
         set({ productDetailLoading: false });

@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import { getAuthToken } from "@/lib/auth";
 import type { InventoryLog, PriceLog } from "@/lib/types";
 
 const api = (path: string) => {
-  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+  const base = getBaseUrl();
   const token = getAuthToken();
   return fetch(`${base}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},

@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
@@ -7,7 +7,7 @@ import type { Category } from "@/lib/types";
 import { filterDisplayCategories } from "@/lib/types";
 
 const api = (path: string, options?: RequestInit) => {
-  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+  const base = getBaseUrl();
   const token = getAuthToken();
   return fetch(`${base}${path}`, {
     ...options,

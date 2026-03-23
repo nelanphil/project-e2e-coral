@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { getAuthToken } from "@/lib/auth";
 import type { CreateUserResponse } from "@/lib/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+const BASE_URL = getBaseUrl();
 
 export default function AdminCreateUserPage() {
   const router = useRouter();

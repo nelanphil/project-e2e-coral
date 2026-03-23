@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -19,7 +19,7 @@ function CheckoutSuccessContent() {
       const t = setTimeout(() => setLoading(false), 0);
       return () => clearTimeout(t);
     }
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+    const apiUrl = getBaseUrl();
     fetch(`${apiUrl}/api/orders/confirmation/${orderId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => setOrder(data))

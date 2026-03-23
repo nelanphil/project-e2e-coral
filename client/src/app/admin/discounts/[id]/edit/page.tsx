@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getAuthToken } from "@/lib/auth";
@@ -7,7 +7,7 @@ import type { Discount } from "@/lib/types";
 import DiscountForm, { type FormState } from "../../_components/DiscountForm";
 
 const api = (path: string, options?: RequestInit) => {
-  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+  const base = getBaseUrl();
   const token = getAuthToken();
   return fetch(`${base}${path}`, {
     ...options,

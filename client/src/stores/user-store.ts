@@ -1,11 +1,8 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { create } from "zustand";
 import { getAuthToken, setAuthToken, clearAuthToken } from "@/lib/auth";
 import type { UserInfo } from "@/lib/types";
-
-const getApiUrl = () =>
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
 
 export interface UserState {
   user: UserInfo | null;
@@ -41,7 +38,7 @@ export const useUserStore = create<UserState>((set) => ({
     }
     set({ loading: true });
     try {
-      const res = await fetch(`${getApiUrl()}/api/auth/me`, {
+      const res = await fetch(`${getBaseUrl()}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Not authenticated");

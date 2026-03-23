@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -196,7 +196,7 @@ export default function CheckoutPage() {
     }
     const t = setTimeout(async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+        const baseUrl = getBaseUrl();
         const res = await fetch(`${baseUrl}/api/auth/check-email`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -263,7 +263,7 @@ export default function CheckoutPage() {
     taxFetchRef.current = setTimeout(async () => {
       try {
         const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+          getBaseUrl();
         const res = await fetch(`${baseUrl}/api/checkout/tax-estimate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -312,7 +312,7 @@ export default function CheckoutPage() {
           return;
         }
         const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+          getBaseUrl();
         const res = await fetch(`${baseUrl}/api/checkout/shipping-rates`, {
           method: "POST",
           headers: {
@@ -347,7 +347,7 @@ export default function CheckoutPage() {
   }, [effectiveShippingAddress]);
 
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+    const baseUrl = getBaseUrl();
     fetch(`${baseUrl}/api/rewards/settings`)
       .then((r) => r.json())
       .then((d) => {
@@ -361,7 +361,7 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+    const baseUrl = getBaseUrl();
     const token = getAuthToken();
     fetch(`${baseUrl}/api/admin/shipping`, {
       headers: {
@@ -387,7 +387,7 @@ export default function CheckoutPage() {
     }
     const token = getAuthToken();
     if (!token) return;
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+    const baseUrl = getBaseUrl();
     fetch(`${baseUrl}/api/rewards/balance`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -439,7 +439,7 @@ export default function CheckoutPage() {
     setDiscountMessage(null);
     try {
       const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+        getBaseUrl();
       const token = getAuthToken();
       const res = await fetch(`${baseUrl}/api/discounts/validate`, {
         method: "POST",
@@ -527,7 +527,7 @@ export default function CheckoutPage() {
       setLoading(false);
       return;
     }
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+    const baseUrl = getBaseUrl();
     const successUrl =
       typeof window !== "undefined"
         ? `${window.location.origin}/checkout/success`

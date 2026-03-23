@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useState } from "react";
 
 type FormState = "idle" | "submitting" | "success" | "error";
@@ -17,7 +17,7 @@ export function ContactForm() {
     setState("submitting");
     setErrorMsg("");
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+      const apiUrl = getBaseUrl();
       const res = await fetch(`${apiUrl}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

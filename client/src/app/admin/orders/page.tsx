@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useEffect, useState, useCallback } from "react";
 import { getAuthToken } from "@/lib/auth";
 import type { AdminOrdersResponse, AdminOrderCounts } from "@/lib/types";
@@ -8,7 +8,7 @@ import OrderFilters from "@/components/admin/OrderFilters";
 import OrdersPagination from "@/components/admin/OrdersPagination";
 import AdminOrdersTable from "@/components/admin/AdminOrdersTable";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+const BASE_URL = getBaseUrl();
 
 const emptyCounts: AdminOrderCounts = {
   total: 0,

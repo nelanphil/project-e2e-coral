@@ -1,3 +1,4 @@
+import { getBaseUrl } from "@/lib/api";
 import { PAGE_DEFINITIONS } from "@/lib/page-sections";
 
 export const dynamic = "force-dynamic";
@@ -6,7 +7,7 @@ type SectionFromApi = { key: string; label?: string; content: string };
 
 async function getPageSections(slug: string): Promise<SectionFromApi[]> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+    const apiUrl = getBaseUrl();
     const res = await fetch(`${apiUrl}/api/pages/${slug}`, {
       next: { revalidate: 60 },
     });

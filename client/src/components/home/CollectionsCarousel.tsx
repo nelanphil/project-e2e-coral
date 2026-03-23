@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -25,7 +25,7 @@ export function CollectionsCarousel({ collections: initialCollections }: Props) 
 
   const fetchVisibleCollections = useCallback(async () => {
     try {
-      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+      const base = getBaseUrl();
       const res = await fetch(`${base}/api/collections`, { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();

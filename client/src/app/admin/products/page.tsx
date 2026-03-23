@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -12,10 +12,6 @@ import { getAuthToken } from "@/lib/auth";
 const DEFAULT_PAGE_SIZE = 50;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500];
 const SEARCH_DEBOUNCE_MS = 400;
-
-function getApiUrl() {
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
-}
 
 function getCategoryId(p: Product): string {
   if (typeof p.category === "string") return p.category;
@@ -38,7 +34,7 @@ async function updateProductField(
   productId: string,
   body: Record<string, unknown>,
 ) {
-  const res = await fetch(`${getApiUrl()}/api/products/${productId}`, {
+  const res = await fetch(`${getBaseUrl()}/api/products/${productId}`, {
     method: "PUT",
     headers: authHeaders(),
     body: JSON.stringify(body),
@@ -48,7 +44,7 @@ async function updateProductField(
 }
 
 async function deleteProduct(productId: string) {
-  const res = await fetch(`${getApiUrl()}/api/products/${productId}`, {
+  const res = await fetch(`${getBaseUrl()}/api/products/${productId}`, {
     method: "DELETE",
     headers: authHeaders(),
   });
@@ -57,7 +53,7 @@ async function deleteProduct(productId: string) {
 }
 
 async function restoreProduct(productId: string) {
-  const res = await fetch(`${getApiUrl()}/api/products/${productId}/restore`, {
+    const res = await fetch(`${getBaseUrl()}/api/products/${productId}/restore`, {
     method: "PATCH",
     headers: authHeaders(),
   });
@@ -67,7 +63,7 @@ async function restoreProduct(productId: string) {
 
 async function toggleVisibility(productId: string, isActive: boolean) {
   const res = await fetch(
-    `${getApiUrl()}/api/products/${productId}/visibility`,
+      `${getBaseUrl()}/api/products/${productId}/visibility`,
     {
       method: "PATCH",
       headers: authHeaders(),

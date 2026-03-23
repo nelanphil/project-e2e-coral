@@ -1,5 +1,5 @@
 "use client";
-
+import { getBaseUrl } from "@/lib/api";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -25,7 +25,7 @@ function SignUpContent() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4004";
+    const baseUrl = getBaseUrl();
     try {
       const res = await fetch(`${baseUrl}/api/auth/sign-up`, {
         method: "POST",
