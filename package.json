@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "npm install && cd server && npm install --include=dev && npm run build && cd ../client && npm install && npm run build",
-    "start": "concurrently \"API_PORT=4004 node server/dist/index.js\" \"npm start --prefix client\""
+    "start": "concurrently \"API_PORT=4004 node server/dist/index.js\" \"PORT=${PORT:-3003} npm start --prefix client\""
   },
   "dependencies": {
     "concurrently": "^9.0.0",
