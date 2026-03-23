@@ -52,7 +52,8 @@ productsRouter.get("/", async (req, res) => {
         filter.isActive = { $ne: false };
       }
     }
-    if (category) filter.category = category;
+    if (category && mongoose.Types.ObjectId.isValid(category))
+      filter.category = new mongoose.Types.ObjectId(category);
     if (q?.trim()) {
       const search = q.trim();
       filter.$or = [
@@ -108,12 +109,12 @@ productsRouter.get("/", async (req, res) => {
         },
         {
           $addFields: {
-            _quantity: { $ifNull: [{ $arrayElemAt: ["$_inv.quantity", 0] }, 0] },
+            _quantity: {
+              $ifNull: [{ $arrayElemAt: ["$_inv.quantity", 0] }, 0],
+            },
           },
         },
-        ...(!includeHidden
-          ? [{ $match: { _quantity: { $gt: 0 } } }]
-          : []),
+        ...(!includeHidden ? [{ $match: { _quantity: { $gt: 0 } } }] : []),
         { $sort: { _quantity: sortOrder } },
         { $skip: skip },
         { $limit: limit },
@@ -163,9 +164,12 @@ productsRouter.get("/", async (req, res) => {
           },
         },
       ];
-      const aggResult = await Product.aggregate<Record<string, unknown>>(pipeline);
+      const aggResult =
+        await Product.aggregate<Record<string, unknown>>(pipeline);
       products = aggResult;
-      total = includeHidden ? await Product.countDocuments(filter) : (inStockTotal ?? 0);
+      total = includeHidden
+        ? await Product.countDocuments(filter)
+        : (inStockTotal ?? 0);
     } else if (!includeHidden) {
       // Paginate over in-stock products only so store sees correct total and page size
       const pipeline: mongoose.PipelineStage[] = [
@@ -180,7 +184,9 @@ productsRouter.get("/", async (req, res) => {
         },
         {
           $addFields: {
-            _quantity: { $ifNull: [{ $arrayElemAt: ["$_inv.quantity", 0] }, 0] },
+            _quantity: {
+              $ifNull: [{ $arrayElemAt: ["$_inv.quantity", 0] }, 0],
+            },
           },
         },
         { $match: { _quantity: { $gt: 0 } } },
@@ -259,7 +265,9 @@ productsRouter.get("/", async (req, res) => {
       });
     }
 
-    const productsWithInventory = products as { inventory?: { quantity: number } }[];
+    const productsWithInventory = products as {
+      inventory?: { quantity: number };
+    }[];
 
     // For public (non-admin), we already filtered to in-stock in aggregation paths
     const visibleProducts = includeHidden
@@ -285,7 +293,9 @@ productsRouter.get("/id/:id", requireAdmin, async (req, res) => {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    const inv = await Inventory.findOne({ product: product._id }).lean<{ quantity?: number } | null>();
+    const inv = await Inventory.findOne({ product: product._id }).lean<{
+      quantity?: number;
+    } | null>();
     res.json({ ...product, inventory: { quantity: inv?.quantity ?? 0 } });
   } catch {
     res.status(500).json({ error: "Failed to get product" });
@@ -305,7 +315,9 @@ productsRouter.get("/:slug", async (req, res) => {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    const inv = await Inventory.findOne({ product: product._id }).lean<{ quantity?: number } | null>();
+    const inv = await Inventory.findOne({ product: product._id }).lean<{
+      quantity?: number;
+    } | null>();
     res.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     res.json({ ...product, inventory: { quantity: inv?.quantity ?? 0 } });
   } catch {
@@ -433,7 +445,9 @@ productsRouter.post("/", requireAdmin, async (req, res) => {
 
 productsRouter.put("/:id", requireAdmin, async (req, res) => {
   const updates = req.body;
-  const existingProduct = await Product.findById(req.params.id).lean<IProduct | null>();
+  const existingProduct = await Product.findById(
+    req.params.id,
+  ).lean<IProduct | null>();
   if (!existingProduct) {
     res.status(404).json({ error: "Not found" });
     return;
@@ -672,11 +686,9 @@ productsRouter.patch("/:id/visibility", requireAdmin, async (req, res) => {
   }
   const { isActive } = req.body;
   if (isActive && (!product.price || product.price <= 0)) {
-    res
-      .status(400)
-      .json({
-        error: "Cannot activate a product with no price. Set a price first.",
-      });
+    res.status(400).json({
+      error: "Cannot activate a product with no price. Set a price first.",
+    });
     return;
   }
   product.isActive = Boolean(isActive);
