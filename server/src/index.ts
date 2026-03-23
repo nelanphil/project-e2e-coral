@@ -8,8 +8,8 @@ const PORT = process.env.API_PORT ?? process.env.PORT ?? 4004;
 connectDb()
   .then(() => {
     startReleaseStaleCartReservationsJob();
-    app.listen(PORT, () => {
-      console.log(`Server listening on http://localhost:${PORT}`);
+    app.listen(Number(PORT), "127.0.0.1", () => {
+      console.log(`Server listening on http://127.0.0.1:${PORT}`);
     });
   })
   .catch((err) => {
