@@ -192,7 +192,8 @@ function CollectionsDropdown({
   onSaved: (productId: string, collectionIds: string[]) => void | Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set(selectedIds));
   const [position, setPosition] = useState<{
     top: number;
@@ -201,9 +202,14 @@ function CollectionsDropdown({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Only sync external selectedIds into local state when the dropdown is closed.
+  // While open, local state is the source of truth to avoid wiping in-flight changes.
   useEffect(() => {
-    setSelected(new Set(selectedIds));
-  }, [selectedIds]);
+    if (!open) {
+      setSelected(new Set(selectedIds));
+      setSaveError(null);
+    }
+  }, [selectedIds, open]);
 
   useEffect(() => {
     if (open && triggerRef.current) {
@@ -227,35 +233,32 @@ function CollectionsDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  const toggle = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
+  const toggle = useCallback(
+    async (id: string) => {
+      if (savingId !== null) return; // one save at a time
+      setSaveError(null);
+      setSavingId(id);
+
+      const prev = new Set(selected);
+      const next = new Set(selected);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      return next;
-    });
-  }, []);
 
-  const hasChanges = (() => {
-    const orig = new Set(selectedIds);
-    if (orig.size !== selected.size) return true;
-    for (const id of selected) if (!orig.has(id)) return true;
-    return false;
-  })();
+      setSelected(next); // optimistic update
 
-  const save = async () => {
-    setSaving(true);
-    const ids = Array.from(selected);
-    try {
-      await updateProductField(productId, { collections: ids });
-      await onSaved(productId, ids);
-      setOpen(false);
-    } catch {
-      /* handled silently */
-    } finally {
-      setSaving(false);
-    }
-  };
+      const ids = Array.from(next);
+      try {
+        await updateProductField(productId, { collections: ids });
+        Promise.resolve(onSaved(productId, ids)).catch(() => {});
+      } catch {
+        setSelected(prev); // revert on failure
+        setSaveError("Failed to save. Please try again.");
+      } finally {
+        setSavingId(null);
+      }
+    },
+    [productId, selected, savingId, onSaved],
+  );
 
   const displayNames = allCollections
     .filter((c) => selected.has(c._id))
@@ -277,29 +280,23 @@ function CollectionsDropdown({
         {allCollections.map((c) => (
           <label
             key={c._id}
-            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-base-200 cursor-pointer text-sm"
+            className={`flex items-center gap-2 px-2 py-1 rounded text-sm ${savingId === null ? "hover:bg-base-200 cursor-pointer" : "cursor-not-allowed opacity-60"}`}
           >
             <input
               type="checkbox"
               className="checkbox checkbox-xs"
               checked={selected.has(c._id)}
+              disabled={savingId !== null}
               onChange={() => toggle(c._id)}
             />
-            {c.name}
+            <span className="flex-1">{c.name}</span>
+            {savingId === c._id && (
+              <span className="loading loading-spinner loading-xs shrink-0" />
+            )}
           </label>
         ))}
-        {hasChanges && (
-          <button
-            className="btn btn-primary btn-xs w-full mt-1"
-            onClick={save}
-            disabled={saving}
-          >
-            {saving ? (
-              <span className="loading loading-spinner loading-xs" />
-            ) : (
-              "Save"
-            )}
-          </button>
+        {saveError && (
+          <div className="text-xs text-error px-2 py-1">{saveError}</div>
         )}
       </div>
     );

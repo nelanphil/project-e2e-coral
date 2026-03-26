@@ -48,7 +48,13 @@ async function run() {
   );
 
   const products = await Product.find({ deletedAt: null }).lean<
-    Array<{ _id: mongoose.Types.ObjectId; name: string; price: number; compareAtPrice?: number; cost: number }>
+    Array<{
+      _id: mongoose.Types.ObjectId;
+      name: string;
+      price: number;
+      compareAtPrice?: number;
+      cost: number;
+    }>
   >();
   console.log(`Found ${products.length} non-deleted products.\n`);
 
