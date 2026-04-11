@@ -1,4 +1,4 @@
-import { randomInt } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -300,24 +300,11 @@ authRouter.post("/forgot-password", async (req, res) => {
   res.json({ message: FORGOT_PASSWORD_MESSAGE });
 });
 
-authRouter.post("/reset-password", async (req, res) => {
-  const { email, code, newPassword } = req.body as {
-    email?: string;
-    code?: string;
-    newPassword?: string;
-  };
+authRouter.post("/verify-reset-code", async (req, res) => {
+  const { email, code } = req.body as { email?: string; code?: string };
 
-  if (!email?.trim() || !code || !newPassword) {
-    res
-      .status(400)
-      .json({ error: "Email, code, and new password are required" });
-    return;
-  }
-
-  if (newPassword.length < 8) {
-    res
-      .status(400)
-      .json({ error: "New password must be at least 8 characters" });
+  if (!email?.trim() || !code) {
+    res.status(400).json({ error: "Email and code are required" });
     return;
   }
 
@@ -349,7 +336,91 @@ authRouter.post("/reset-password", async (req, res) => {
     return;
   }
 
+  const proof = randomBytes(32).toString("hex");
+  user.passwordResetTokenHash = await bcrypt.hash(proof, 10);
+  user.passwordResetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  user.passwordResetCodeHash = undefined;
+  user.passwordResetCodeExpiresAt = undefined;
+  await user.save();
+
+  const resetToken = jwt.sign(
+    {
+      purpose: "pwd_reset",
+      userId: user._id.toString(),
+      proof,
+    },
+    JWT_SECRET,
+    { expiresIn: "15m" },
+  );
+
+  res.json({ resetToken });
+});
+
+authRouter.post("/reset-password", async (req, res) => {
+  const { resetToken, newPassword } = req.body as {
+    resetToken?: string;
+    newPassword?: string;
+  };
+
+  if (!resetToken || !newPassword) {
+    res
+      .status(400)
+      .json({ error: "Reset token and new password are required" });
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    res
+      .status(400)
+      .json({ error: "New password must be at least 8 characters" });
+    return;
+  }
+
+  let payload: { purpose?: string; userId?: string; proof?: string };
+  try {
+    payload = jwt.verify(resetToken, JWT_SECRET) as {
+      purpose?: string;
+      userId?: string;
+      proof?: string;
+    };
+  } catch {
+    res.status(400).json({ error: "Invalid or expired reset session" });
+    return;
+  }
+
+  if (
+    payload.purpose !== "pwd_reset" ||
+    !payload.userId ||
+    typeof payload.proof !== "string"
+  ) {
+    res.status(400).json({ error: "Invalid or expired reset session" });
+    return;
+  }
+
+  const user = await User.findById(payload.userId);
+  if (
+    !user ||
+    user.role === "guest" ||
+    !user.passwordResetTokenHash ||
+    !user.passwordResetTokenExpiresAt ||
+    user.passwordResetTokenExpiresAt <= new Date()
+  ) {
+    res.status(400).json({ error: "Invalid or expired reset session" });
+    return;
+  }
+
+  const proofOk = await bcrypt.compare(
+    payload.proof,
+    user.passwordResetTokenHash,
+  );
+  if (!proofOk) {
+    res.status(400).json({ error: "Invalid or expired reset session" });
+    return;
+  }
+
   user.passwordHash = await bcrypt.hash(newPassword, 10);
+  user.passwordResetTokenHash = undefined;
+  user.passwordResetTokenExpiresAt = undefined;
   user.passwordResetCodeHash = undefined;
   user.passwordResetCodeExpiresAt = undefined;
   await user.save();

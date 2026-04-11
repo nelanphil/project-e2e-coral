@@ -6,6 +6,8 @@ export interface IUser {
   passwordHash?: string;
   passwordResetCodeHash?: string;
   passwordResetCodeExpiresAt?: Date;
+  passwordResetTokenHash?: string;
+  passwordResetTokenExpiresAt?: Date;
   firstName: string;
   lastName: string;
   role: "customer" | "admin" | "guest";
@@ -26,6 +28,8 @@ const userSchema = new Schema<IUser>(
     passwordHash: { type: String, required: false },
     passwordResetCodeHash: { type: String, required: false },
     passwordResetCodeExpiresAt: { type: Date, required: false },
+    passwordResetTokenHash: { type: String, required: false },
+    passwordResetTokenExpiresAt: { type: Date, required: false },
     firstName: { type: String, default: "" },
     lastName: { type: String, default: "" },
     role: {
