@@ -4,6 +4,8 @@ export interface IUser {
   _id: mongoose.Types.ObjectId;
   email?: string;
   passwordHash?: string;
+  passwordResetCodeHash?: string;
+  passwordResetCodeExpiresAt?: Date;
   firstName: string;
   lastName: string;
   role: "customer" | "admin" | "guest";
@@ -22,6 +24,8 @@ const userSchema = new Schema<IUser>(
   {
     email: { type: String, required: false, unique: true, sparse: true },
     passwordHash: { type: String, required: false },
+    passwordResetCodeHash: { type: String, required: false },
+    passwordResetCodeExpiresAt: { type: Date, required: false },
     firstName: { type: String, default: "" },
     lastName: { type: String, default: "" },
     role: {

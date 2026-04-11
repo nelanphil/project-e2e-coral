@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -9,6 +10,7 @@ import {
 import type { IUser } from "../models/User.js";
 import { User } from "../models/User.js";
 import type { Request } from "express";
+import { sendPasswordResetCodeEmail } from "../services/email.js";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-in-production";
 
@@ -249,6 +251,110 @@ authRouter.post("/guest", async (req, res) => {
       lastVisit: user.lastVisit,
     },
   });
+});
+
+const FORGOT_PASSWORD_MESSAGE =
+  "If an account exists for this email, we've sent a 6-digit code. Check your inbox.";
+
+function buildClientOrigin(): string {
+  return (process.env.CLIENT_ORIGIN ?? "http://localhost:3003").replace(
+    /\/$/,
+    "",
+  );
+}
+
+authRouter.post("/forgot-password", async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (!email?.trim()) {
+    res.status(400).json({ error: "Email required" });
+    return;
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await User.findOne({
+    email: normalizedEmail,
+    role: { $ne: "guest" },
+    passwordHash: { $exists: true, $ne: "" },
+  });
+
+  if (user?.passwordHash) {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const passwordResetCodeHash = await bcrypt.hash(code, 10);
+    const passwordResetCodeExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    user.passwordResetCodeHash = passwordResetCodeHash;
+    user.passwordResetCodeExpiresAt = passwordResetCodeExpiresAt;
+    await user.save();
+
+    const resetPageUrl = `${buildClientOrigin()}/auth/reset-password?email=${encodeURIComponent(normalizedEmail)}`;
+    const sent = await sendPasswordResetCodeEmail(
+      normalizedEmail,
+      code,
+      resetPageUrl,
+    );
+    if (!sent) {
+      console.warn(
+        `Password reset requested for ${normalizedEmail} but email was not sent (transport not configured)`,
+      );
+    }
+  }
+
+  res.json({ message: FORGOT_PASSWORD_MESSAGE });
+});
+
+authRouter.post("/reset-password", async (req, res) => {
+  const { email, code, newPassword } = req.body as {
+    email?: string;
+    code?: string;
+    newPassword?: string;
+  };
+
+  if (!email?.trim() || !code || !newPassword) {
+    res
+      .status(400)
+      .json({ error: "Email, code, and new password are required" });
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    res
+      .status(400)
+      .json({ error: "New password must be at least 8 characters" });
+    return;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const digitsOnly = String(code).replace(/\D/g, "");
+  if (digitsOnly.length !== 6) {
+    res.status(400).json({ error: "Invalid or expired reset code" });
+    return;
+  }
+
+  const user = await User.findOne({
+    email: normalizedEmail,
+    role: { $ne: "guest" },
+    passwordHash: { $exists: true, $ne: "" },
+  });
+
+  if (
+    !user?.passwordResetCodeHash ||
+    !user.passwordResetCodeExpiresAt ||
+    user.passwordResetCodeExpiresAt <= new Date()
+  ) {
+    res.status(400).json({ error: "Invalid or expired reset code" });
+    return;
+  }
+
+  const codeOk = await bcrypt.compare(digitsOnly, user.passwordResetCodeHash);
+  if (!codeOk) {
+    res.status(400).json({ error: "Invalid or expired reset code" });
+    return;
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  user.passwordResetCodeHash = undefined;
+  user.passwordResetCodeExpiresAt = undefined;
+  await user.save();
+
+  res.json({ message: "Password updated successfully" });
 });
 
 // ─── Change Password ─────────────────────────────────────────────────────────

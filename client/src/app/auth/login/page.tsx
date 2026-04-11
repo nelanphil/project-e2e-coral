@@ -15,11 +15,16 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
+  const passwordResetOk = searchParams.get("passwordReset") === "1";
   // Only allow same-origin paths (start with / but not //)
   const safeRedirect =
     redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
       ? redirectTo
       : "/";
+  const forgotPasswordHref =
+    redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+      ? `/auth/forgot-password?redirect=${encodeURIComponent(redirectTo)}`
+      : "/auth/forgot-password";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,6 +58,11 @@ function LoginContent() {
         <div className="card-body">
           <h1 className="card-title text-2xl justify-center">Log in</h1>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {passwordResetOk && (
+              <p className="text-success text-sm" role="status">
+                Your password was reset. You can sign in with your new password.
+              </p>
+            )}
             {error && <p className="text-error text-sm">{error}</p>}
             <div>
               <label className="label" htmlFor="email">
@@ -117,6 +127,11 @@ function LoginContent() {
                     </svg>
                   )}
                 </button>
+              </div>
+              <div className="text-right mt-1">
+                <Link href={forgotPasswordHref} className="link link-primary text-sm">
+                  Forgot password?
+                </Link>
               </div>
             </div>
             <button
