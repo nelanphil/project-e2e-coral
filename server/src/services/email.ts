@@ -298,6 +298,51 @@ export async function sendTemporaryPasswordEmail(
 }
 
 /**
+ * Sends a password reset code and link to the reset page.
+ * Returns true if the email was sent, false if transport is not configured.
+ */
+export async function sendPasswordResetCodeEmail(
+  email: string,
+  code: string,
+  resetPageUrl: string,
+): Promise<boolean> {
+  const transporter = getTransport();
+  if (!transporter) {
+    console.warn(
+      "Password reset email skipped: email transport not configured",
+    );
+    return false;
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Reset your password</title></head>
+<body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1 style="font-size: 1.25rem;">Password reset</h1>
+  <p>Use this 6-digit code to reset your password. It expires in 15 minutes.</p>
+  <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 1rem 0; text-align: center;">
+    <p style="margin: 0 0 4px 0; font-size: 0.875rem; color: #666;">Your code</p>
+    <p style="margin: 0; font-size: 1.5rem; font-weight: bold; letter-spacing: 0.25em; font-family: monospace;">${escapeHtml(code)}</p>
+  </div>
+  <p style="margin-top: 1.5rem;">
+    <a href="${escapeHtml(resetPageUrl)}" style="display: inline-block; background: #2563eb; color: #fff; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Enter code on the site</a>
+  </p>
+  <p style="margin-top: 1rem; color: #666; font-size: 0.875rem;">If you did not request this, you can ignore this email.</p>
+</body>
+</html>`;
+
+  await transporter.sendMail({
+    from: user,
+    to: email,
+    subject: "Your password reset code",
+    html,
+  });
+  console.log(`Password reset code email sent to ${email}`);
+  return true;
+}
+
+/**
  * Sends order confirmation + admin alert exactly once per order.
  * Uses atomic update to prevent duplicates when both webhook and confirmation endpoint run.
  * Call this whenever an order transitions to paid (webhook or verifyStripePayment).
