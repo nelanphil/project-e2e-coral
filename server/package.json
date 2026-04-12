@@ -14,6 +14,15 @@
     "copy-db-to-prod": "tsx src/scripts/copy-db-to-prod.ts"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.17",
+    "@types/csv-parse": "^1.1.12",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^20.0.0",
+    "@types/nodemailer": "^6.4.16",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.9.0",
     "compression": "^1.8.1",
@@ -28,20 +37,11 @@
     "node-cron": "^4.2.1",
     "shippo": "^2.0.1",
     "stripe": "^17.4.0",
+    "typescript": "^5.0.0",
     "zip-state": "^1.0.3"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/compression": "^1.8.1",
-    "@types/cors": "^2.8.17",
-    "@types/csv-parse": "^1.1.12",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/multer": "^2.0.0",
-    "@types/node": "^20.0.0",
-    "@types/nodemailer": "^6.4.16",
     "nodemon": "^3.1.14",
-    "tsx": "^4.19.0",
-    "typescript": "^5.0.0"
+    "tsx": "^4.19.0"
   }
 }
