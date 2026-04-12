@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: CLIENT_ORIGIN
-        sync: false          # set in Render dashboard
+        sync: false # set in Render dashboard
 
   # ── Next.js static site ──
   - type: static
@@ -30,4 +30,4 @@ services:
         destination: /index.html
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        sync: false          # set in Render dashboard (e.g. https://project-e2e-coral-api.onrender.com)
+        sync: false # set in Render dashboard (e.g. https://project-e2e-coral-api.onrender.com)
