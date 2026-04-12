@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { blogPosts } from "@/lib/blog-data";
-import { Calendar, Clock, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, User } from "lucide-react";
 
 export const metadata = {
   title: "Blog | Coral Store",
@@ -9,11 +9,6 @@ export const metadata = {
 };
 
 const FEATURED_COUNT = 2;
-const PER_PAGE = 6;
-
-type Props = {
-  searchParams: Promise<{ page?: string }>;
-};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -23,18 +18,9 @@ function formatDate(iso: string) {
   });
 }
 
-export default async function BlogPage({ searchParams }: Props) {
-  const { page: pageParam } = await searchParams;
-  const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10));
-
+export default async function BlogPage() {
   const featuredPosts = blogPosts.slice(0, FEATURED_COUNT);
   const remainingPosts = blogPosts.slice(FEATURED_COUNT);
-  const totalPages = Math.max(1, Math.ceil(remainingPosts.length / PER_PAGE));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginatedPosts = remainingPosts.slice(
-    (safePage - 1) * PER_PAGE,
-    safePage * PER_PAGE,
-  );
 
   return (
     <main className="container mx-auto px-4 py-10 max-w-6xl">

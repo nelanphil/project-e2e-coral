@@ -1,5 +1,9 @@
 "use client";
 import { getBaseUrl } from "@/lib/api";
+
+export function generateStaticParams() {
+  return [];
+}
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";

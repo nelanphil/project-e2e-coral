@@ -5,7 +5,18 @@ import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { SanitizedHtml } from "@/components/SanitizedHtml";
 import { stripHtml } from "@/lib/strip-html";
-import type { Product } from "@/lib/types";
+import type { Product, ProductsResponse } from "@/lib/types";
+
+export async function generateStaticParams() {
+  try {
+    const { products } = await fetchApi<ProductsResponse>(
+      "/api/products?limit=500",
+    );
+    return (products ?? []).map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
+}
 
 type Props = {
   params: Promise<{ slug: string }>;

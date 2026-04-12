@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { fetchApi } from "@/lib/api-server";
-import type { Category } from "@/lib/types";
+import type { Category, CategoriesResponse } from "@/lib/types";
 import type { ProductsResponse } from "@/lib/types";
+
+export async function generateStaticParams() {
+  try {
+    const { categories } = await fetchApi<CategoriesResponse>("/api/categories");
+    return (categories ?? []).map((c) => ({ slug: c.slug }));
+  } catch {
+    return [];
+  }
+}
 
 type Props = {
   params: Promise<{ slug: string }>;

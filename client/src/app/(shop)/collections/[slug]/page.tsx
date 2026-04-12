@@ -1,8 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { fetchApi } from "@/lib/api-server";
-import type { Collection, Product } from "@/lib/types";
+import type { Collection, Product, CollectionsResponse } from "@/lib/types";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+
+export async function generateStaticParams() {
+  try {
+    const { collections } = await fetchApi<CollectionsResponse>("/api/collections");
+    return (collections ?? []).map((c) => ({ slug: c.slug }));
+  } catch {
+    return [];
+  }
+}
 
 type Props = { params: Promise<{ slug: string }> };
 
