@@ -3,6 +3,8 @@ import { fetchApi } from "@/lib/api-server";
 import type { ProductsResponse, CategoriesResponse, CollectionsResponse } from "@/lib/types";
 import { filterDisplayCategories } from "@/lib/types";
 
+export const dynamic = "force-static";
+
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3003";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
