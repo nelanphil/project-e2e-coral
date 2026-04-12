@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { blogPosts } from "@/lib/blog-data";
-import { Calendar, Clock, User } from "lucide-react";
+import { Calendar, Clock, User, ChevronLeft, ChevronRight } from "lucide-react";
 
 export const metadata = {
   title: "Blog | Coral Store",
@@ -9,6 +9,11 @@ export const metadata = {
 };
 
 const FEATURED_COUNT = 2;
+const PER_PAGE = 6;
+
+type Props = {
+  searchParams: Promise<{ page?: string }>;
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -18,9 +23,18 @@ function formatDate(iso: string) {
   });
 }
 
-export default async function BlogPage() {
+export default async function BlogPage({ searchParams }: Props) {
+  const { page: pageParam } = await searchParams;
+  const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10));
+
   const featuredPosts = blogPosts.slice(0, FEATURED_COUNT);
   const remainingPosts = blogPosts.slice(FEATURED_COUNT);
+  const totalPages = Math.max(1, Math.ceil(remainingPosts.length / PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedPosts = remainingPosts.slice(
+    (safePage - 1) * PER_PAGE,
+    safePage * PER_PAGE,
+  );
 
   return (
     <main className="container mx-auto px-4 py-10 max-w-6xl">
@@ -85,10 +99,10 @@ export default async function BlogPage() {
       <div className="divider mb-10">All Articles</div>
 
       {/* Paginated Posts Grid */}
-      {remainingPosts.length > 0 && (
+      {paginatedPosts.length > 0 && (
         <section>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {remainingPosts.map((post) => (
+            {paginatedPosts.map((post) => (
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
@@ -123,6 +137,67 @@ export default async function BlogPage() {
               </Link>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2">
+              {safePage > 1 ? (
+                <Link
+                  href={`/blog?page=${safePage - 1}`}
+                  className="btn btn-outline btn-sm gap-1"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="size-4" />
+                  Prev
+                </Link>
+              ) : (
+                <button
+                  className="btn btn-outline btn-sm gap-1"
+                  disabled
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="size-4" />
+                  Prev
+                </button>
+              )}
+
+              <div className="join">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <Link
+                      key={page}
+                      href={`/blog?page=${page}`}
+                      className={`join-item btn btn-sm ${page === safePage ? "btn-primary" : "btn-outline"}`}
+                      aria-label={`Page ${page}`}
+                      aria-current={page === safePage ? "page" : undefined}
+                    >
+                      {page}
+                    </Link>
+                  ),
+                )}
+              </div>
+
+              {safePage < totalPages ? (
+                <Link
+                  href={`/blog?page=${safePage + 1}`}
+                  className="btn btn-outline btn-sm gap-1"
+                  aria-label="Next page"
+                >
+                  Next
+                  <ChevronRight className="size-4" />
+                </Link>
+              ) : (
+                <button
+                  className="btn btn-outline btn-sm gap-1"
+                  disabled
+                  aria-label="Next page"
+                >
+                  Next
+                  <ChevronRight className="size-4" />
+                </button>
+              )}
+            </div>
+          )}
         </section>
       )}
     </main>
