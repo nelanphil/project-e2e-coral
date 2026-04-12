@@ -1,0 +1,8 @@
+# Single Web Service: Next.js (public) + Express API on :4004 in one dyno.
+# Do not set Root Directory to `client` — that skips the API and breaks /api/* rewrites.
+services:
+  - type: web
+    name: project-e2e-coral
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
