@@ -85,10 +85,10 @@ export default async function BlogPage() {
       <div className="divider mb-10">All Articles</div>
 
       {/* Paginated Posts Grid */}
-      {paginatedPosts.length > 0 && (
+      {remainingPosts.length > 0 && (
         <section>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-            {paginatedPosts.map((post) => (
+            {remainingPosts.map((post) => (
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
@@ -123,67 +123,6 @@ export default async function BlogPage() {
               </Link>
             ))}
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2">
-              {safePage > 1 ? (
-                <Link
-                  href={`/blog?page=${safePage - 1}`}
-                  className="btn btn-outline btn-sm gap-1"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="size-4" />
-                  Prev
-                </Link>
-              ) : (
-                <button
-                  className="btn btn-outline btn-sm gap-1"
-                  disabled
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="size-4" />
-                  Prev
-                </button>
-              )}
-
-              <div className="join">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <Link
-                      key={page}
-                      href={`/blog?page=${page}`}
-                      className={`join-item btn btn-sm ${page === safePage ? "btn-primary" : "btn-outline"}`}
-                      aria-label={`Page ${page}`}
-                      aria-current={page === safePage ? "page" : undefined}
-                    >
-                      {page}
-                    </Link>
-                  ),
-                )}
-              </div>
-
-              {safePage < totalPages ? (
-                <Link
-                  href={`/blog?page=${safePage + 1}`}
-                  className="btn btn-outline btn-sm gap-1"
-                  aria-label="Next page"
-                >
-                  Next
-                  <ChevronRight className="size-4" />
-                </Link>
-              ) : (
-                <button
-                  className="btn btn-outline btn-sm gap-1"
-                  disabled
-                  aria-label="Next page"
-                >
-                  Next
-                  <ChevronRight className="size-4" />
-                </button>
-              )}
-            </div>
-          )}
         </section>
       )}
     </main>
