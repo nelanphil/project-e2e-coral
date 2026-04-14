@@ -55,10 +55,10 @@ productsRouter.get("/", async (req, res) => {
     if (category && mongoose.Types.ObjectId.isValid(category))
       filter.category = new mongoose.Types.ObjectId(category);
     if (q?.trim()) {
-      const search = q.trim();
+      const escapedSearch = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       filter.$or = [
-        { name: new RegExp(search, "i") },
-        { description: new RegExp(search, "i") },
+        { name: new RegExp(escapedSearch, "i") },
+        { description: new RegExp(escapedSearch, "i") },
       ];
     }
 
