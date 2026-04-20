@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { stripHtml } from "@/lib/strip-html";
 import type { Product, Category } from "@/lib/types";
@@ -79,7 +80,17 @@ export function HomeProductGrid({
               href={`/coral/${p.slug}?from=store`}
               className="card card-compact bg-base-100 shadow hover:shadow-md transition"
             >
-              <figure className="bg-base-200 h-48" />
+              <figure className="bg-base-200 h-48 relative shrink-0 overflow-hidden">
+                {p.images?.[0] ? (
+                  <Image
+                    src={p.images[0]}
+                    alt={p.name}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    className="object-cover"
+                  />
+                ) : null}
+              </figure>
               <div className="card-body">
                 <h2 className="card-title text-lg">{p.name}</h2>
                 <p className="text-sm text-base-content/80 line-clamp-2">

@@ -3,10 +3,14 @@
  */
 export function stripHtml(html: string | null | undefined): string {
   if (html == null || html === "") return "";
-  if (typeof document !== "undefined") {
-    const div = document.createElement("div");
-    div.innerHTML = html;
-    return (div.textContent ?? div.innerText ?? "").trim().replace(/\s+/g, " ");
-  }
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/&nbsp;/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { fetchApi } from "@/lib/api-server";
 import type { Category, CategoriesResponse } from "@/lib/types";
 import type { ProductsResponse } from "@/lib/types";
@@ -70,7 +71,17 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         {products.map((p) => (
           <li key={p._id}>
             <Link href={`/coral/${p.slug}?from=${fromCollections ? "collections" : "store"}`} className="card card-compact bg-base-100 shadow hover:shadow-md transition">
-              <figure className="bg-base-200 h-48" />
+              <figure className="bg-base-200 h-48 relative shrink-0 overflow-hidden">
+                {p.images?.[0] ? (
+                  <Image
+                    src={p.images[0]}
+                    alt={p.name}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    className="object-cover"
+                  />
+                ) : null}
+              </figure>
               <div className="card-body">
                 <h2 className="card-title text-lg">{p.name}</h2>
                 <p className="font-semibold flex items-center gap-2">

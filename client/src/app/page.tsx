@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { CollectionsCarousel } from "@/components/home/CollectionsCarousel";
 import { fetchApi } from "@/lib/api-server";
@@ -134,7 +135,17 @@ export default async function Home() {
                   key={product._id}
                   href={`/coral/${product.slug}?from=store`}
                   className="card bg-base-200 shadow-md hover:shadow-lg transition">
-                  <figure className="bg-base-300 h-48" />
+                  <figure className="bg-base-300 h-48 relative shrink-0 overflow-hidden">
+                    {product.images?.[0] ? (
+                      <Image
+                        src={product.images[0]}
+                        alt={product.name}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                        className="object-cover"
+                      />
+                    ) : null}
+                  </figure>
                   <div className="card-body">
                     <h3 className="card-title text-lg">{product.name}</h3>
                     <p className="text-sm text-base-content/70 line-clamp-2">
