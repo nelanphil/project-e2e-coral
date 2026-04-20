@@ -12,18 +12,18 @@ import {
 } from "@/lib/types";
 
 export const metadata: Metadata = {
-  title: "Coral Store — Premium Corals for Your Reef",
+  title: "CF Coral — Premium Corals for Your Reef",
   description:
     "Shop premium corals for your reef aquarium. Carefully curated selection of high-quality specimens for beginners and experienced collectors.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Coral Store — Premium Corals for Your Reef",
+    title: "CF Coral — Premium Corals for Your Reef",
     description:
       "Shop premium corals for your reef aquarium. Carefully curated selection of high-quality specimens for beginners and experienced collectors.",
   },
   twitter: {
     card: "summary",
-    title: "Coral Store — Premium Corals for Your Reef",
+    title: "CF Coral — Premium Corals for Your Reef",
     description:
       "Shop premium corals for your reef aquarium. Carefully curated selection of high-quality specimens for beginners and experienced collectors.",
   },
@@ -58,11 +58,11 @@ export default async function Home() {
       <section className="py-16 px-4 bg-base-100">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-3xl font-bold text-center mb-8">
-            About Coral Store
+            About CF Coral
           </h2>
           <div className="prose prose-lg max-w-none text-base-content/80">
             <p className="text-lg mb-4">
-              At Coral Store, we are passionate about bringing you the highest
+              At CF Coral, we are passionate about bringing you the highest
               quality coral products from around the world. Our carefully
               curated selection features stunning specimens that are perfect for
               both beginners and experienced collectors.
@@ -87,7 +87,7 @@ export default async function Home() {
       <section className="py-16 px-4 bg-base-200">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl font-bold text-center mb-12">
-            Why Choose Coral Store?
+            Why Choose CF Coral?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="card bg-base-100 shadow-lg">

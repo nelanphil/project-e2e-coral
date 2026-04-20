@@ -3,7 +3,7 @@ import { blogPosts } from "@/lib/blog-data";
 import { Calendar, Clock, User, ChevronLeft, ChevronRight } from "lucide-react";
 
 export const metadata = {
-  title: "Blog | Coral Store",
+  title: "Blog | CF Coral",
   description:
     "Care guides, species spotlights, and expert tips for reef aquarium enthusiasts.",
 };

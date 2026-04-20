@@ -34,11 +34,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3003";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Coral Store",
+  title: "CF Coral",
   description: "eCommerce store for coral",
   openGraph: {
     type: "website",
-    siteName: "Coral Store",
+    siteName: "CF Coral",
     locale: "en_US",
   },
   twitter: {
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "Coral Store",
+  name: "CF Coral",
   url: siteUrl,
 };
 

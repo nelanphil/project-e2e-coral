@@ -16,7 +16,7 @@ export const PAGE_DEFINITIONS: Record<string, PageDefinition> = {
       {
         key: "intro",
         label: "About Our Support",
-        defaultContent: `<p>At Coral Store, we're passionate about helping you succeed with your reef aquarium. Our customer service team consists of experienced reef hobbyists who understand the unique needs of coral enthusiasts. Whether you have a question about a specific coral species, need help with acclimation, or have a concern about your order, we're here to help.</p>
+        defaultContent: `<p>At CF Coral, we're passionate about helping you succeed with your reef aquarium. Our customer service team consists of experienced reef hobbyists who understand the unique needs of coral enthusiasts. Whether you have a question about a specific coral species, need help with acclimation, or have a concern about your order, we're here to help.</p>
 <p>We pride ourselves on fast, knowledgeable responses and stand behind every coral we ship. Your satisfaction — and the health of your reef — is our top priority.</p>`,
       },
       {
@@ -102,7 +102,7 @@ export const PAGE_DEFINITIONS: Record<string, PageDefinition> = {
         key: "overview",
         label: "Overview",
         defaultContent: `<p>Last updated: March 2025</p>
-<p>Coral Store ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information about you when you use our website and services. By using our site, you agree to the practices described in this policy.</p>`,
+<p>CF Coral ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information about you when you use our website and services. By using our site, you agree to the practices described in this policy.</p>`,
       },
       {
         key: "data-collection",
@@ -151,7 +151,7 @@ export const PAGE_DEFINITIONS: Record<string, PageDefinition> = {
         defaultContent: `<p>If you have any questions or concerns about this Privacy Policy or your personal data, please contact us:</p>
 <ul>
   <li><strong>Email:</strong> privacy@coralstore.com</li>
-  <li><strong>Mailing address:</strong> Coral Store, 123 Reef Way, Miami, FL 33101</li>
+  <li><strong>Mailing address:</strong> CF Coral, 123 Reef Way, Miami, FL 33101</li>
 </ul>
 <p>We will respond to all privacy-related inquiries within 30 days.</p>`,
       },
@@ -165,7 +165,7 @@ export const PAGE_DEFINITIONS: Record<string, PageDefinition> = {
         key: "acceptance",
         label: "Acceptance of Terms",
         defaultContent: `<p>Last updated: March 2025</p>
-<p>By accessing or using the Coral Store website (the "Site") or placing an order with us, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Site. We reserve the right to update these Terms at any time, and continued use of the Site after changes constitutes acceptance of the updated Terms.</p>`,
+<p>By accessing or using the CF Coral website (the "Site") or placing an order with us, you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Site. We reserve the right to update these Terms at any time, and continued use of the Site after changes constitutes acceptance of the updated Terms.</p>`,
       },
       {
         key: "accounts",
@@ -188,7 +188,7 @@ export const PAGE_DEFINITIONS: Record<string, PageDefinition> = {
       {
         key: "live-animal",
         label: "Live Animal Policy",
-        defaultContent: `<p>By purchasing live corals, fish, or invertebrates from Coral Store, you acknowledge and agree to the following:</p>
+        defaultContent: `<p>By purchasing live corals, fish, or invertebrates from CF Coral, you acknowledge and agree to the following:</p>
 <ul>
   <li>You have a suitable, established aquarium system prepared and ready to receive livestock prior to ordering.</li>
   <li>You understand that keeping marine animals requires knowledge, proper equipment, and ongoing maintenance.</li>
@@ -200,7 +200,7 @@ export const PAGE_DEFINITIONS: Record<string, PageDefinition> = {
       {
         key: "limitation",
         label: "Limitation of Liability",
-        defaultContent: `<p>To the maximum extent permitted by applicable law, Coral Store shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or purchase of our products, even if we have been advised of the possibility of such damages.</p>
+        defaultContent: `<p>To the maximum extent permitted by applicable law, CF Coral shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Site or purchase of our products, even if we have been advised of the possibility of such damages.</p>
 <p>Our total liability for any claim arising from or related to our products or services shall not exceed the amount you paid for the specific product or service giving rise to the claim.</p>`,
       },
       {

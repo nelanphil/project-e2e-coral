@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Store Info */}
           <div>
-            <h3 className="text-lg font-bold mb-2">Coral Store</h3>
+            <h3 className="text-lg font-bold mb-2">CF Coral</h3>
             <p className="text-sm text-base-content/70">
               Your trusted source for premium coral products. We offer the finest selection
               of quality corals for enthusiasts and collectors.
@@ -51,7 +51,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-base-300 mt-8 pt-6 text-center text-sm text-base-content/60">
-          <p>&copy; {currentYear} Coral Store. All rights reserved.</p>
+          <p>&copy; {currentYear} CF Coral. All rights reserved.</p>
         </div>
       </div>
     </footer>

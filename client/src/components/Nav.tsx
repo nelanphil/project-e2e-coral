@@ -81,7 +81,7 @@ export function Nav() {
               </button>
             )}
           </div>
-          {/* Center: Store | Collections | Coral Store | Blog | Account */}
+          {/* Center: Store | Collections | CF Coral | Blog | Account */}
           <div className="relative z-10 flex items-center gap-2 shrink-0 justify-center">
             <Link href="/store" className="btn btn-ghost btn-sm shrink-0 hidden lg:flex">
               Store
@@ -95,11 +95,11 @@ export function Nav() {
             <Link
               href="/"
               className="btn btn-ghost p-1 hover:bg-transparent shrink-0"
-              aria-label="Coral Store home"
+              aria-label="CF Coral home"
             >
               <Image
                 src={logo}
-                alt="Coral Store"
+                alt="CF Coral"
                 className="h-38 w-auto"
                 priority
               />

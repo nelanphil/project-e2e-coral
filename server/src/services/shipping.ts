@@ -5,7 +5,7 @@ const apiKey = process.env.SHIPPO_API_KEY;
 const shippo = apiKey ? new Shippo({ apiKeyHeader: apiKey }) : null;
 
 const defaultFrom = {
-  name: process.env.SHIPPO_FROM_NAME ?? "Coral Store",
+  name: process.env.SHIPPO_FROM_NAME ?? "CF Coral",
   street1: process.env.SHIPPO_FROM_STREET ?? "123 Store St",
   city: process.env.SHIPPO_FROM_CITY ?? "Austin",
   state: process.env.SHIPPO_FROM_STATE ?? "TX",

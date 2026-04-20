@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props) {
   const post = blogPosts.find((p) => p.slug === slug);
   if (!post) return { title: "Post Not Found" };
   return {
-    title: `${post.title} | Coral Store Blog`,
+    title: `${post.title} | CF Coral Blog`,
     description: post.excerpt,
   };
 }

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 
 const FALLBACK_TEXT =
-  "Welcome to Coral Store - Free shipping on orders over $50 - New arrivals every week";
+  "Welcome to CF Coral - Free shipping on orders over $50 - New arrivals every week";
 
 const TICKER_CHANNEL = "ticker-banner-update";
 const POLL_INTERVAL_MS = 30_000;
