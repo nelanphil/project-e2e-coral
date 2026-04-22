@@ -183,6 +183,86 @@ function EditablePriceCell({
   );
 }
 
+function EditableSkuCell({
+  productId,
+  value,
+  onSaved,
+}: {
+  productId: string;
+  value: string | null | undefined;
+  onSaved: (productId: string, newValue: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const normalized = (v: string | null | undefined) => {
+    const t = (v ?? "").trim();
+    return t === "" ? null : t;
+  };
+
+  const startEditing = () => {
+    setDraft((value ?? "").trim());
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  };
+
+  const save = async () => {
+    const newValue = normalized(draft);
+    if (newValue === normalized(value)) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateProductField(productId, { sku: newValue });
+      onSaved(productId, newValue);
+    } catch {
+      /* handled silently */
+    } finally {
+      setSaving(false);
+      setEditing(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") void save();
+    if (e.key === "Escape") setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1 min-w-0">
+        <input
+          ref={inputRef}
+          type="text"
+          className="input input-bordered input-xs w-36 max-w-full font-mono"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => void save()}
+          onKeyDown={handleKeyDown}
+          disabled={saving}
+          autoFocus
+        />
+        {saving && <span className="loading loading-spinner loading-xs shrink-0" />}
+      </div>
+    );
+  }
+
+  const display = normalized(value);
+
+  return (
+    <button
+      type="button"
+      className="text-left font-mono text-xs hover:underline cursor-pointer decoration-dotted underline-offset-2 min-w-0"
+      onClick={startEditing}
+    >
+      {display ? display : <span className="text-base-content/40">—</span>}
+    </button>
+  );
+}
+
 function CollectionsDropdown({
   productId,
   selectedIds,
@@ -430,6 +510,13 @@ export default function AdminProductsPage() {
       newValue: number | null,
     ) => {
       updateProductInList(productId, { [field]: newValue } as Partial<Product>);
+    },
+    [updateProductInList],
+  );
+
+  const handleSkuSaved = useCallback(
+    (productId: string, newValue: string | null) => {
+      updateProductInList(productId, { sku: newValue } as Partial<Product>);
     },
     [updateProductInList],
   );
@@ -829,10 +916,12 @@ export default function AdminProductsPage() {
                         }
                       >
                         <td>{p.name}</td>
-                        <td className="font-mono text-xs">
-                          {p.sku || (
-                            <span className="text-base-content/40">—</span>
-                          )}
+                        <td className="align-middle">
+                          <EditableSkuCell
+                            productId={p._id}
+                            value={p.sku}
+                            onSaved={handleSkuSaved}
+                          />
                         </td>
                         <td>
                           {viewStatus === "active" ? (

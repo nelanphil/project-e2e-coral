@@ -136,11 +136,6 @@ export default async function CoralProductPage({ params, searchParams }: Props) 
         </div>
         <div>
           <h1 className="text-3xl font-bold">{product.name}</h1>
-          {hasContent(product.sku) && (
-            <p className="mt-1 text-sm text-base-content/60">
-              SKU: {product.sku}
-            </p>
-          )}
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <p className="text-xl font-semibold flex items-center gap-2">
               <span>${(product.price / 100).toFixed(2)}</span>
@@ -245,26 +240,19 @@ export default async function CoralProductPage({ params, searchParams }: Props) 
           </div>
         )}
 
-        {(hasAttributes || hasContent(product.sku)) && (
+        {hasAttributes && (
           <div className="card bg-base-100 shadow">
             <div className="card-body">
               <h2 className="text-xl font-semibold mb-3">Product Details</h2>
               <div className="overflow-x-auto">
                 <table className="table table-zebra">
                   <tbody>
-                    {hasContent(product.sku) && (
-                      <tr>
-                        <th className="w-1/3">SKU</th>
-                        <td>{product.sku}</td>
+                    {Object.entries(attributes).map(([key, value]) => (
+                      <tr key={key}>
+                        <th className="w-1/3">{key}</th>
+                        <td>{value}</td>
                       </tr>
-                    )}
-                    {hasAttributes &&
-                      Object.entries(attributes).map(([key, value]) => (
-                        <tr key={key}>
-                          <th className="w-1/3">{key}</th>
-                          <td>{value}</td>
-                        </tr>
-                      ))}
+                    ))}
                   </tbody>
                 </table>
               </div>

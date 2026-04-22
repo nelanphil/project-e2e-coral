@@ -63,8 +63,6 @@ export default async function StorePage({
 
   return (
     <main className="w-full px-6 pt-6 pb-10">
-      <h1 className="text-2xl font-bold mb-2">Store</h1>
-      <p className="text-base-content/80 mb-4">Browse our coral collection.</p>
       <StoreView
         products={products}
         categories={categories}
