@@ -1,8 +1,5 @@
 import "dotenv/config";
 import { connectDb } from "../lib/db.js";
-import { Category } from "../models/Category.js";
-import { Product } from "../models/Product.js";
-import { Inventory } from "../models/Inventory.js";
 import { User } from "../models/User.js";
 import { StaticPage } from "../models/StaticPage.js";
 import { getDefaultSections, getDefaultSlugs } from "../data/staticPageDefaults.js";

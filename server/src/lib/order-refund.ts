@@ -1,5 +1,4 @@
 import type { IOrder } from "../models/Order.js";
-import { Order } from "../models/Order.js";
 import { User } from "../models/User.js";
 import { Inventory } from "../models/Inventory.js";
 import { InventoryLog } from "../models/InventoryLog.js";

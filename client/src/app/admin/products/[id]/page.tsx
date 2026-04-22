@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { ProductImageManager } from "@/components/admin/ProductImageManager";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { slugify } from "@/lib/slugify";
 import { useProductStore } from "@/stores/product-store";
 import { revalidateProducts } from "@/app/actions/revalidate";
@@ -56,6 +57,12 @@ function EditProductContent() {
     images: [] as string[],
     collectionIds: [] as string[],
     attributes: {} as Record<string, string>,
+    whyChoose: "",
+    keyFeatures: "",
+    colorVariation: "",
+    growthHabit: "",
+    optimalCare: "",
+    idealCompatibility: "",
     inventoryReason: "manual" as "manual" | "restock" | "adjustment",
     inventoryNotes: "",
     priceReason: "correction" as
@@ -144,6 +151,12 @@ function EditProductContent() {
               p.attributes && typeof p.attributes === "object"
                 ? p.attributes
                 : {},
+            whyChoose: p.whyChoose ?? "",
+            keyFeatures: p.keyFeatures ?? "",
+            colorVariation: p.colorVariation ?? "",
+            growthHabit: p.growthHabit ?? "",
+            optimalCare: p.optimalCare ?? "",
+            idealCompatibility: p.idealCompatibility ?? "",
             inventoryReason: "manual",
             inventoryNotes: "",
             priceReason: "correction",
@@ -185,6 +198,12 @@ function EditProductContent() {
           images: form.images,
           collections: form.collectionIds,
           attributes: form.attributes,
+          whyChoose: form.whyChoose || null,
+          keyFeatures: form.keyFeatures || null,
+          colorVariation: form.colorVariation || null,
+          growthHabit: form.growthHabit || null,
+          optimalCare: form.optimalCare || null,
+          idealCompatibility: form.idealCompatibility || null,
         }),
       });
       if (!res.ok) {
@@ -397,13 +416,90 @@ function EditProductContent() {
                   <label className="label">
                     <span className="label-text">Description</span>
                   </label>
-                  <textarea
-                    className="textarea textarea-bordered w-full"
+                  <RichTextEditor
                     value={form.description}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, description: e.target.value }))
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, description: html }))
                     }
-                    rows={6}
+                    minHeight="10rem"
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Why Choose</span>
+                  </label>
+                  <RichTextEditor
+                    value={form.whyChoose}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, whyChoose: html }))
+                    }
+                    placeholder="Optional"
+                    minHeight="6rem"
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Key Features</span>
+                  </label>
+                  <RichTextEditor
+                    value={form.keyFeatures}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, keyFeatures: html }))
+                    }
+                    placeholder="Optional"
+                    minHeight="6rem"
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Color Variation</span>
+                  </label>
+                  <RichTextEditor
+                    value={form.colorVariation}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, colorVariation: html }))
+                    }
+                    placeholder="Optional"
+                    minHeight="6rem"
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Growth Habit</span>
+                  </label>
+                  <RichTextEditor
+                    value={form.growthHabit}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, growthHabit: html }))
+                    }
+                    placeholder="Optional"
+                    minHeight="6rem"
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Optimal Care</span>
+                  </label>
+                  <RichTextEditor
+                    value={form.optimalCare}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, optimalCare: html }))
+                    }
+                    placeholder="Optional"
+                    minHeight="6rem"
+                  />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="label-text">Ideal Compatibility with Other Corals</span>
+                  </label>
+                  <RichTextEditor
+                    value={form.idealCompatibility}
+                    onChange={(html) =>
+                      setForm((f) => ({ ...f, idealCompatibility: html }))
+                    }
+                    placeholder="Optional"
+                    minHeight="6rem"
                   />
                 </div>
                 <div>

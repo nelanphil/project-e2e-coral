@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { connectDb } from "../lib/db.js";
 import { Order } from "../models/Order.js";
-import { User } from "../models/User.js";
 import mongoose from "mongoose";
 
 /**

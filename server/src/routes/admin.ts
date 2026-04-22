@@ -664,7 +664,7 @@ adminRouter.put("/inventory/:productId", async (req, res) => {
         change: newQty - oldQty,
         reason: reason || "manual",
         notes: notes?.trim() || "",
-        performedBy: (req as any).userId,
+        performedBy: (req as AuthRequest).userId,
       });
     }
 

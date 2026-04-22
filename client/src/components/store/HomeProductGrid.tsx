@@ -80,14 +80,14 @@ export function HomeProductGrid({
               href={`/coral/${p.slug}?from=store`}
               className="card card-compact bg-base-100 shadow hover:shadow-md transition"
             >
-              <figure className="bg-base-200 h-48 relative shrink-0 overflow-hidden">
+              <figure className="aspect-[4/3] relative shrink-0 overflow-hidden rounded-lg mt-3 mx-3">
                 {p.images?.[0] ? (
                   <Image
                     src={p.images[0]}
                     alt={p.name}
                     fill
                     sizes="(max-width: 1024px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                    className="object-cover"
+                    className="object-contain"
                   />
                 ) : null}
               </figure>

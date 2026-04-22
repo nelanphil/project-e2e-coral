@@ -62,7 +62,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       ) {
         const statusBefore = order.status;
         order.status = "processing";
-        (order as any).paymentStatus = "paid";
+        order.paymentStatus = "paid";
         if (session.payment_intent)
           order.stripePaymentIntentId = String(session.payment_intent);
         await order.save();

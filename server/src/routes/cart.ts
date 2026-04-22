@@ -191,7 +191,7 @@ cartRouter.patch("/:productId", async (req, res) => {
     res.status(400).json({ error: "Invalid productId" });
     return;
   }
-  const newQty = Math.max(0, Math.min(99, Math.floor(Number(quantity) ?? 0)));
+  const newQty = Math.max(0, Math.min(99, Math.floor(Number(quantity ?? 0))));
   try {
     const cart = await Cart.findOne({ sessionId });
     if (!cart) {
@@ -283,7 +283,6 @@ cartRouter.post("/clear", async (req, res) => {
       return;
     }
     for (const item of cart.items) {
-      const productId = item.product.toString();
       let inv = await Inventory.findOne({ product: item.product });
       if (!inv) {
         inv = await Inventory.create({ product: item.product, quantity: 0 });

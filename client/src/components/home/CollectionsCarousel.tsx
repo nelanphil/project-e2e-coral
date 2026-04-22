@@ -116,14 +116,14 @@ export function CollectionsCarousel({ collections: initialCollections }: Props) 
                                 href={`/coral/${product.slug}?from=collections`}
                                 className="card card-compact bg-base-200 hover:bg-base-300 transition shadow-sm"
                               >
-                                <figure className="bg-base-300 h-36 relative">
+                                <figure className="aspect-[4/3] relative overflow-hidden rounded-lg mt-3 mx-3">
                                   {product.images?.[0] ? (
                                     <Image
                                       src={product.images[0]}
                                       alt={product.name}
                                       fill
                                       sizes="(max-width: 768px) 50vw, 25vw"
-                                      className="object-cover"
+                                      className="object-contain"
                                     />
                                   ) : null}
                                 </figure>

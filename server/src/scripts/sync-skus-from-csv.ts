@@ -217,11 +217,11 @@ async function syncSkusFromCsv() {
 
           createdCount++;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         errorCount++;
         console.error(
           `❌ Row ${i + 1}: Error processing "${title}":`,
-          error.message,
+          (error as Error).message,
         );
       }
     }

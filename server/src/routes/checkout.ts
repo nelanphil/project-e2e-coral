@@ -2,7 +2,6 @@ import { Router } from "express";
 import Stripe from "stripe";
 import { Cart } from "../models/Cart.js";
 import { Order } from "../models/Order.js";
-import { Product } from "../models/Product.js";
 import { User } from "../models/User.js";
 import { optionalAuth, type AuthRequest } from "../middleware/auth.js";
 import { getFloridaTaxRate } from "../services/florida-tax.js";
@@ -315,7 +314,7 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
   let discountAmountCents = 0;
   let appliedDiscountCode: string | undefined;
   let appliedDiscountType: "product" | "shipping" | undefined;
-  let discountDoc: (IDiscount & { _id: unknown }) | null = null;
+  let discountDoc: (IDiscount & { _id: unknown }) | null;
 
   if (discountCode && typeof discountCode === "string") {
     discountDoc = (await Discount.findOne({

@@ -11,7 +11,8 @@
     "import-inventory": "tsx src/scripts/import-inventory.ts",
     "clean-product-names": "tsx src/scripts/clean-product-names.ts",
     "sync-skus": "tsx src/scripts/sync-skus-from-csv.ts",
-    "copy-db-to-prod": "tsx src/scripts/copy-db-to-prod.ts"
+    "copy-db-to-prod": "tsx src/scripts/copy-db-to-prod.ts",
+    "lint": "eslint src"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

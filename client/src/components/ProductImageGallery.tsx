@@ -26,7 +26,7 @@ export function ProductImageGallery({ images, alt }: ProductImageGalleryProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="w-full aspect-square md:aspect-auto md:h-[min(42vh,400px)] overflow-hidden relative">
+      <div className="w-full aspect-square md:aspect-auto md:h-[min(42vh,400px)] overflow-hidden relative rounded-lg">
         <Image
           src={mainSrc!}
           alt={alt}

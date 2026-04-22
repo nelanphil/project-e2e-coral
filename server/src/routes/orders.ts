@@ -1,5 +1,4 @@
 import { Router } from "express";
-import mongoose from "mongoose";
 import Stripe from "stripe";
 import {
   requireAuth,
@@ -35,7 +34,7 @@ export async function verifyStripePayment(orderId: string): Promise<boolean> {
     if (session.payment_status === "paid") {
       const statusBefore = order.status;
       order.status = order.status === "pending" ? "processing" : order.status;
-      (order as any).paymentStatus = "paid";
+      order.paymentStatus = "paid";
       if (session.payment_intent) {
         order.stripePaymentIntentId = String(session.payment_intent);
       }

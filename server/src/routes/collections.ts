@@ -243,8 +243,8 @@ collectionsRouter.post("/", requireAdmin, async (req, res) => {
       products: [],
     });
     res.status(201).json(collection);
-  } catch (err: any) {
-    if (err.code === 11000) {
+  } catch (err: unknown) {
+    if ((err as { code?: number }).code === 11000) {
       res.status(400).json({ error: "Slug already exists" });
       return;
     }
@@ -265,7 +265,7 @@ collectionsRouter.put("/:id", requireAdmin, async (req, res) => {
   if (slug != null)
     updates.slug =
       (slug && String(slug).trim()) ||
-      slugify(name ?? (existingCollection as any).name);
+      slugify(name ?? existingCollection.name);
   if (description != null) updates.description = description;
   if (carouselDescription !== undefined) updates.carouselDescription = carouselDescription ?? "";
   if (typeof showInCarousel === "boolean") updates.showInCarousel = showInCarousel;
@@ -290,8 +290,8 @@ collectionsRouter.put("/:id", requireAdmin, async (req, res) => {
       return;
     }
     res.json(collection);
-  } catch (err: any) {
-    if (err.code === 11000) {
+  } catch (err: unknown) {
+    if ((err as { code?: number }).code === 11000) {
       res.status(400).json({ error: "Slug already exists" });
       return;
     }

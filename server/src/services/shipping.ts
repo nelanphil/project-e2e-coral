@@ -61,7 +61,7 @@ export async function createShipment(params: {
   rateId: string;
 }): Promise<{ trackingNumber: string; labelUrl?: string } | null> {
   if (!shippo) return null;
-  const { addressTo, rateId } = params;
+  const { rateId } = params;
   try {
     const transaction = await shippo.transactions.create({ rate: rateId } as Parameters<typeof shippo.transactions.create>[0]);
     const t = transaction as { status?: string; trackingNumber?: string; labelUrl?: string };

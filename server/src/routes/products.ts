@@ -1,6 +1,6 @@
 import { Router } from "express";
 import mongoose from "mongoose";
-import { requireAdmin } from "../middleware/auth.js";
+import { requireAdmin, type AuthRequest } from "../middleware/auth.js";
 import { Collection } from "../models/Collection.js";
 import { Product, type IProduct } from "../models/Product.js";
 import { Inventory } from "../models/Inventory.js";
@@ -278,7 +278,7 @@ productsRouter.get("/", async (req, res) => {
 
     res.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     res.json({ products: visibleProducts, total: visibleTotal, page, limit });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to list products" });
   }
 });
@@ -395,7 +395,7 @@ productsRouter.post("/", requireAdmin, async (req, res) => {
   const qty = Number(quantity) || 0;
   const inv = await Inventory.create({ product: product._id, quantity: qty });
 
-  const createUserId = (req as any).userId;
+  const createUserId = (req as AuthRequest).userId;
 
   if (qty > 0) {
     await InventoryLog.create({
@@ -458,7 +458,7 @@ productsRouter.put("/:id", requireAdmin, async (req, res) => {
   if (updates.slug != null)
     productUpdate.slug =
       (updates.slug && String(updates.slug).trim()) ||
-      slugify(updates.name ?? (existingProduct as any).name);
+      slugify(updates.name ?? existingProduct.name);
   if (updates.sku !== undefined)
     productUpdate.sku = updates.sku?.trim() || null;
   if (updates.description != null)
@@ -542,7 +542,7 @@ productsRouter.put("/:id", requireAdmin, async (req, res) => {
         ? String((c as { _id: unknown })._id)
         : String(c);
     const oldIds = new Set<string>(
-      ((existingProduct as any).collections ?? []).map(toIdStr),
+      (existingProduct.collections ?? []).map(toIdStr),
     );
     const newIds = new Set<string>(
       ((productUpdate.collections as mongoose.Types.ObjectId[]) ?? []).map(
@@ -565,7 +565,7 @@ productsRouter.put("/:id", requireAdmin, async (req, res) => {
     ]);
   }
 
-  const userId = (req as any).userId;
+  const userId = (req as AuthRequest).userId;
 
   const validPriceReasons = [
     "promotion",
@@ -596,12 +596,12 @@ productsRouter.put("/:id", requireAdmin, async (req, res) => {
 
   if (
     updates.cost != null &&
-    Number(updates.cost) !== (existingProduct as any).cost
+    Number(updates.cost) !== (existingProduct.cost ?? 0)
   ) {
     await PriceLog.create({
       product: product._id,
       field: "cost",
-      valueBefore: (existingProduct as any).cost ?? 0,
+      valueBefore: existingProduct.cost ?? 0,
       valueAfter: Number(updates.cost),
       reason: priceReason,
       notes: priceNotes,
@@ -610,7 +610,7 @@ productsRouter.put("/:id", requireAdmin, async (req, res) => {
   }
 
   if (updates.compareAtPrice !== undefined) {
-    const oldVal = (existingProduct as any).compareAtPrice ?? 0;
+    const oldVal = existingProduct.compareAtPrice ?? 0;
     const newVal = updates.compareAtPrice ? Number(updates.compareAtPrice) : 0;
     if (newVal !== oldVal) {
       await PriceLog.create({

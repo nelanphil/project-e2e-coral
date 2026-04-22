@@ -58,9 +58,9 @@ uploadRouter.post(
       );
 
       res.json({ url: optimizedUrl, publicId: result.public_id });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Cloudinary upload error:", err);
-      res.status(500).json({ error: err.message || "Image upload failed" });
+      res.status(500).json({ error: (err as Error).message || "Image upload failed" });
     }
   },
 );
