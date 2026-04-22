@@ -251,6 +251,11 @@ export default function CheckoutPage() {
     return s === "FL" || s === "FLORIDA";
   }, [effectiveShippingAddress.state]);
 
+  const isRestrictedState = useMemo(() => {
+    const s = effectiveShippingAddress.state?.toUpperCase().trim();
+    return s === "AK" || s === "ALASKA" || s === "HI" || s === "HAWAII";
+  }, [effectiveShippingAddress.state]);
+
   useEffect(() => {
     const zip = effectiveShippingAddress.postalCode
       ?.replace(/\D/g, "")
@@ -511,6 +516,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (isRestrictedState) {
+      setError("We do not ship to Hawaii or Alaska. Please provide a continental US shipping address.");
+      return;
+    }
+
     if (billingValidationError) {
       setError("Please correct the billing address.");
       return;
@@ -584,6 +594,20 @@ export default function CheckoutPage() {
             onSubmit={handleSubmit}
             className="space-y-6">
             {error && <p className="text-error text-sm">{error}</p>}
+
+            {isRestrictedState && (
+              <div className="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <div>
+                  <p className="font-semibold">We don&apos;t ship to Hawaii or Alaska.</p>
+                  <p className="text-sm">Unfortunately we are unable to deliver to these states at this time. Please use a continental US shipping address.</p>
+                </div>
+              </div>
+            )}
 
             {!user && (
               <>
@@ -967,6 +991,7 @@ export default function CheckoutPage() {
               disabled={
                 loading ||
                 items.length === 0 ||
+                isRestrictedState ||
                 !!billingValidationError ||
                 (!shippingSameAsBilling && !!shippingValidationError) ||
                 (!user && !isValidEmail(email)) ||

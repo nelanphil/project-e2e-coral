@@ -126,6 +126,14 @@ checkoutRouter.post("/shipping-rates", async (req, res) => {
   }
 
   const state = shippingAddress.state?.toUpperCase().trim();
+
+  if (state === "AK" || state === "ALASKA" || state === "HI" || state === "HAWAII") {
+    res.status(400).json({
+      error: "We do not ship to Hawaii or Alaska. Please use a continental US shipping address.",
+    });
+    return;
+  }
+
   const flatSettings =
     await ShippingSettings.findOne().lean<IShippingSettings | null>();
 
@@ -208,6 +216,19 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
   if (!addressValidation.valid) {
     res.status(400).json({
       error: addressValidation.message ?? "Postal code does not match state",
+    });
+    return;
+  }
+
+  const shippingStateNorm = shippingAddress.state?.toUpperCase().trim();
+  if (
+    shippingStateNorm === "AK" ||
+    shippingStateNorm === "ALASKA" ||
+    shippingStateNorm === "HI" ||
+    shippingStateNorm === "HAWAII"
+  ) {
+    res.status(400).json({
+      error: "We do not ship to Hawaii or Alaska. Please use a continental US shipping address.",
     });
     return;
   }
