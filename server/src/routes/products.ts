@@ -37,6 +37,7 @@ productsRouter.get("/", async (req, res) => {
       price: "price",
       compareAtPrice: "compareAtPrice",
       collections: "collections",
+      sku: "sku",
     };
 
     const status = req.query.status as string | undefined;

@@ -3,7 +3,10 @@ import { getBaseUrl } from "@/lib/api";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { revalidateCollections } from "@/app/actions/revalidate";
+import {
+  revalidateProducts,
+  revalidateCollections,
+} from "@/app/actions/revalidate";
 import { useProductStore } from "@/stores/product-store";
 import type { Product, Collection } from "@/lib/types";
 import { filterDisplayCategories } from "@/lib/types";
@@ -441,6 +444,7 @@ export default function AdminProductsPage() {
 
   const SORTABLE_COLUMNS: { key: string; label: string }[] = [
     { key: "name", label: "Name" },
+    { key: "sku", label: "SKU" },
     { key: "isActive", label: "Visible" },
     { key: "category", label: "Category" },
     { key: "collections", label: "Collections" },
@@ -566,6 +570,8 @@ export default function AdminProductsPage() {
     updateProductInList(productId, { isActive: !currentlyActive });
     try {
       await toggleVisibility(productId, !currentlyActive);
+      await revalidateProducts();
+      await revalidateCollections();
     } catch (err: unknown) {
       updateProductInList(productId, { isActive: currentlyActive });
       setVisibilityError(
@@ -789,14 +795,14 @@ export default function AdminProductsPage() {
               <tbody>
                 {productsLoading ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-8">
+                    <td colSpan={9} className="text-center py-8">
                       <span className="loading loading-spinner loading-md" />
                     </td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={9}
                       className="text-center text-base-content/70 py-8"
                     >
                       {debouncedSearchQuery.trim()
@@ -823,6 +829,11 @@ export default function AdminProductsPage() {
                         }
                       >
                         <td>{p.name}</td>
+                        <td className="font-mono text-xs">
+                          {p.sku || (
+                            <span className="text-base-content/40">—</span>
+                          )}
+                        </td>
                         <td>
                           {viewStatus === "active" ? (
                             <div className="flex items-center gap-2 min-h-10">
