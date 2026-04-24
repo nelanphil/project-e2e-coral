@@ -3,6 +3,7 @@ import { getBaseUrl } from "@/lib/api";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import Image from "next/image";
 import {
   revalidateProducts,
   revalidateCollections,
@@ -444,6 +445,11 @@ export default function AdminProductsPage() {
     name: string;
   } | null>(null);
   const modalRef = useRef<HTMLDialogElement>(null);
+  const imagePreviewRef = useRef<HTMLDialogElement>(null);
+  const [imagePreview, setImagePreview] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
 
   const fetchWithSort = useCallback(
     (
@@ -486,6 +492,12 @@ export default function AdminProductsPage() {
     fetchCategories();
     fetchCollections();
   }, [fetchCategories, fetchCollections]);
+
+  useEffect(() => {
+    if (imagePreview) {
+      imagePreviewRef.current?.showModal();
+    }
+  }, [imagePreview]);
 
   const handleCategoryChange = async (
     productId: string,
@@ -612,7 +624,19 @@ export default function AdminProductsPage() {
     </th>
   );
 
+  const openImagePreview = (url: string, name: string) => {
+    modalRef.current?.close();
+    setConfirmDelete(null);
+    setImagePreview({ url, name });
+  };
+
+  const closeImagePreview = () => {
+    imagePreviewRef.current?.close();
+  };
+
   const openDeleteModal = (product: { _id: string; name: string }) => {
+    imagePreviewRef.current?.close();
+    setImagePreview(null);
     setConfirmDelete({ id: product._id, name: product.name });
     modalRef.current?.showModal();
   };
@@ -915,7 +939,49 @@ export default function AdminProductsPage() {
                               : ""
                         }
                       >
-                        <td>{p.name}</td>
+                        <td>
+                          <div className="flex items-center gap-2 min-w-0 max-w-xs sm:max-w-sm md:max-w-md">
+                            {p.images?.[0] ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openImagePreview(p.images[0], p.name)
+                                }
+                                className="shrink-0 rounded-md overflow-hidden border border-base-300 bg-base-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                aria-label={`Preview image for ${p.name}`}
+                              >
+                                <Image
+                                  src={p.images[0]}
+                                  alt=""
+                                  width={40}
+                                  height={40}
+                                  className="object-cover w-10 h-10"
+                                />
+                              </button>
+                            ) : (
+                              <div
+                                className="shrink-0 w-10 h-10 rounded-md border border-base-300 bg-base-200 flex items-center justify-center text-base-content/25"
+                                aria-hidden
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  className="w-5 h-5"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                            <span className="min-w-0 truncate">{p.name}</span>
+                          </div>
+                        </td>
                         <td className="align-middle">
                           <EditableSkuCell
                             productId={p._id}
@@ -1038,6 +1104,40 @@ export default function AdminProductsPage() {
           <PaginationControls />
         </div>
       </div>
+
+      <dialog
+        ref={imagePreviewRef}
+        className="modal"
+        onClose={() => setImagePreview(null)}
+      >
+        <div className="modal-box max-w-3xl">
+          {imagePreview && (
+            <>
+              <h3 className="font-bold text-lg pr-8 mb-2">{imagePreview.name}</h3>
+              <div className="relative w-full flex justify-center rounded-lg bg-base-200 p-2">
+                <Image
+                  src={imagePreview.url}
+                  alt={imagePreview.name}
+                  width={1200}
+                  height={1200}
+                  className="max-w-full max-h-[70vh] w-auto h-auto object-contain"
+                  unoptimized
+                />
+              </div>
+            </>
+          )}
+          <div className="modal-action">
+            <button type="button" className="btn" onClick={closeImagePreview}>
+              Close
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button type="button" onClick={closeImagePreview}>
+            close
+          </button>
+        </form>
+      </dialog>
 
       <dialog ref={modalRef} className="modal">
         <div className="modal-box">

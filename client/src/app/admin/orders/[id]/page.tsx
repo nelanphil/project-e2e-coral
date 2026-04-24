@@ -111,6 +111,12 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [trackingUpdating, setTrackingUpdating] = useState(false);
+  const [notifyTrackingLoading, setNotifyTrackingLoading] = useState(false);
+  const [trackingNotifyFeedback, setTrackingNotifyFeedback] = useState<
+    | null
+    | { type: "success"; message: string }
+    | { type: "error"; message: string }
+  >(null);
   const [trackingInput, setTrackingInput] = useState("");
   const [refunding, setRefunding] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
@@ -146,6 +152,7 @@ export default function AdminOrderDetailPage() {
   const handleTrackingSave = async () => {
     setTrackingUpdating(true);
     setError("");
+    setTrackingNotifyFeedback(null);
     try {
       const token = getAuthToken();
       const res = await fetch(
@@ -168,6 +175,48 @@ export default function AdminOrderDetailPage() {
       setError("Failed to update tracking");
     } finally {
       setTrackingUpdating(false);
+    }
+  };
+
+  const handleNotifyCustomerTracking = async () => {
+    setNotifyTrackingLoading(true);
+    setTrackingNotifyFeedback(null);
+    try {
+      const token = getAuthToken();
+      const res = await fetch(
+        `${BASE_URL}/api/admin/orders/${orderId}/notify-tracking`,
+        {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
+      let json: { error?: string } = {};
+      try {
+        json = (await res.json()) as { error?: string };
+      } catch {
+        /* ignore */
+      }
+      if (!res.ok) {
+        setTrackingNotifyFeedback({
+          type: "error",
+          message:
+            typeof json.error === "string"
+              ? json.error
+              : "Failed to notify customer",
+        });
+        return;
+      }
+      setTrackingNotifyFeedback({
+        type: "success",
+        message: "Email sent to the customer with their tracking number.",
+      });
+    } catch {
+      setTrackingNotifyFeedback({
+        type: "error",
+        message: "Failed to notify customer",
+      });
+    } finally {
+      setNotifyTrackingLoading(false);
     }
   };
 
@@ -529,18 +578,49 @@ export default function AdminOrderDetailPage() {
                     onChange={(e) => setTrackingInput(e.target.value)}
                     disabled={trackingUpdating}
                   />
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    onClick={handleTrackingSave}
-                    disabled={trackingUpdating}
-                  >
-                    {trackingUpdating ? (
-                      <span className="loading loading-spinner loading-xs" />
-                    ) : (
-                      "Save Tracking"
-                    )}
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={handleTrackingSave}
+                      disabled={trackingUpdating}
+                    >
+                      {trackingUpdating ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : (
+                        "Save Tracking"
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleNotifyCustomerTracking}
+                      disabled={
+                        trackingUpdating ||
+                        notifyTrackingLoading ||
+                        !order.trackingNumber?.trim() ||
+                        !customerEmail.trim()
+                      }
+                    >
+                      {notifyTrackingLoading ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : (
+                        "Notify Customer"
+                      )}
+                    </button>
+                  </div>
+                  {trackingNotifyFeedback && (
+                    <div
+                      role="status"
+                      className={
+                        trackingNotifyFeedback.type === "success"
+                          ? "alert alert-success text-sm py-2"
+                          : "alert alert-error text-sm py-2"
+                      }
+                    >
+                      <span>{trackingNotifyFeedback.message}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

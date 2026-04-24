@@ -141,7 +141,7 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("");
   const [billingAddress, setBillingAddress] =
     useState<AddressFields>(emptyAddress);
-  const [shippingSameAsBilling, setShippingSameAsBilling] = useState(true);
+  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
   const [shippingAddress, setShippingAddress] =
     useState<AddressFields>(emptyAddress);
   const [taxAmount, setTaxAmount] = useState<number | null>(null);
@@ -216,12 +216,9 @@ export default function CheckoutPage() {
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const effectiveShippingAddress = useMemo(
-    () => (shippingSameAsBilling ? billingAddress : shippingAddress),
-    [shippingSameAsBilling, billingAddress, shippingAddress],
-  );
   const shippingAmount = selectedRate?.amountCents ?? 0;
   const billingValidationError = useMemo(() => {
+    if (billingSameAsShipping) return null;
     if (!billingAddress.postalCode || !billingAddress.state) return null;
     const result = validatePostalCodeMatchesState(
       billingAddress.postalCode,
@@ -229,9 +226,13 @@ export default function CheckoutPage() {
       billingAddress.country,
     );
     return result.valid ? null : (result.message ?? null);
-  }, [billingAddress.postalCode, billingAddress.state, billingAddress.country]);
+  }, [
+    billingSameAsShipping,
+    billingAddress.postalCode,
+    billingAddress.state,
+    billingAddress.country,
+  ]);
   const shippingValidationError = useMemo(() => {
-    if (shippingSameAsBilling) return null;
     if (!shippingAddress.postalCode || !shippingAddress.state) return null;
     const result = validatePostalCodeMatchesState(
       shippingAddress.postalCode,
@@ -240,24 +241,23 @@ export default function CheckoutPage() {
     );
     return result.valid ? null : (result.message ?? null);
   }, [
-    shippingSameAsBilling,
     shippingAddress.postalCode,
     shippingAddress.state,
     shippingAddress.country,
   ]);
 
   const isFlorida = useMemo(() => {
-    const s = effectiveShippingAddress.state?.toUpperCase().trim();
+    const s = shippingAddress.state?.toUpperCase().trim();
     return s === "FL" || s === "FLORIDA";
-  }, [effectiveShippingAddress.state]);
+  }, [shippingAddress.state]);
 
   const isRestrictedState = useMemo(() => {
-    const s = effectiveShippingAddress.state?.toUpperCase().trim();
+    const s = shippingAddress.state?.toUpperCase().trim();
     return s === "AK" || s === "ALASKA" || s === "HI" || s === "HAWAII";
-  }, [effectiveShippingAddress.state]);
+  }, [shippingAddress.state]);
 
   useEffect(() => {
-    const zip = effectiveShippingAddress.postalCode
+    const zip = shippingAddress.postalCode
       ?.replace(/\D/g, "")
       .slice(0, 5);
     if (!isFlorida || !zip || zip.length !== 5) {
@@ -273,7 +273,7 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            state: effectiveShippingAddress.state,
+            state: shippingAddress.state,
             postalCode: zip,
             subtotal,
           }),
@@ -288,10 +288,10 @@ export default function CheckoutPage() {
     return () => {
       if (taxFetchRef.current) clearTimeout(taxFetchRef.current);
     };
-  }, [effectiveShippingAddress, subtotal, isFlorida]);
+  }, [shippingAddress, subtotal, isFlorida]);
 
   useEffect(() => {
-    const addr = effectiveShippingAddress;
+    const addr = shippingAddress;
     if (
       !addr.line1 ||
       !addr.city ||
@@ -349,7 +349,7 @@ export default function CheckoutPage() {
     return () => {
       if (shippingFetchRef.current) clearTimeout(shippingFetchRef.current);
     };
-  }, [effectiveShippingAddress]);
+  }, [shippingAddress]);
 
   useEffect(() => {
     const baseUrl = getBaseUrl();
@@ -504,7 +504,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const shipping = effectiveShippingAddress;
+    const shipping = shippingAddress;
     if (
       !shipping.line1 ||
       !shipping.city ||
@@ -521,12 +521,12 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (billingValidationError) {
-      setError("Please correct the billing address.");
+    if (shippingValidationError) {
+      setError("Please correct the shipping address.");
       return;
     }
-    if (!shippingSameAsBilling && shippingValidationError) {
-      setError("Please correct the shipping address.");
+    if (!billingSameAsShipping && billingValidationError) {
+      setError("Please correct the billing address.");
       return;
     }
 
@@ -559,7 +559,7 @@ export default function CheckoutPage() {
           successUrl,
           cancelUrl,
           shippingAddress: shipping,
-          billingAddress,
+          billingAddress: billingSameAsShipping ? shipping : billingAddress,
           shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
           email: user ? undefined : email,
           pointsToApply: pointsToApply > 0 ? pointsToApply : undefined,
@@ -679,12 +679,12 @@ export default function CheckoutPage() {
             )}
 
             <section>
-              <h2 className="font-semibold text-lg mb-4">Billing address</h2>
+              <h2 className="font-semibold text-lg mb-4">Shipping address</h2>
               <AddressForm
-                address={billingAddress}
-                onChange={setBillingAddress}
-                prefix="billing"
-                validationError={billingValidationError ?? undefined}
+                address={shippingAddress}
+                onChange={setShippingAddress}
+                prefix="shipping"
+                validationError={shippingValidationError ?? undefined}
               />
             </section>
 
@@ -693,25 +693,25 @@ export default function CheckoutPage() {
                 <input
                   type="checkbox"
                   className="checkbox checkbox-sm"
-                  checked={shippingSameAsBilling}
+                  checked={billingSameAsShipping}
                   onChange={(e) => {
                     const checked = e.target.checked;
-                    setShippingSameAsBilling(checked);
-                    if (!checked) setShippingAddress({ ...billingAddress });
+                    setBillingSameAsShipping(checked);
+                    if (!checked) setBillingAddress({ ...shippingAddress });
                   }}
                 />
-                <span>Shipping address same as billing</span>
+                <span>Billing address same as shipping</span>
               </label>
             </section>
 
-            {!shippingSameAsBilling && (
+            {!billingSameAsShipping && (
               <section>
-                <h2 className="font-semibold text-lg mb-4">Shipping address</h2>
+                <h2 className="font-semibold text-lg mb-4">Billing address</h2>
                 <AddressForm
-                  address={shippingAddress}
-                  onChange={setShippingAddress}
-                  prefix="shipping"
-                  validationError={shippingValidationError ?? undefined}
+                  address={billingAddress}
+                  onChange={setBillingAddress}
+                  prefix="billing"
+                  validationError={billingValidationError ?? undefined}
                 />
               </section>
             )}
@@ -786,14 +786,14 @@ export default function CheckoutPage() {
                 </select>
               </div>
             )}
-            {shippingLoading && effectiveShippingAddress.line1 && (
+            {shippingLoading && shippingAddress.line1 && (
               <p className="text-sm text-base-content/60 mb-2">
                 Loading shipping rates…
               </p>
             )}
             {!shippingLoading &&
-              effectiveShippingAddress.line1 &&
-              effectiveShippingAddress.postalCode &&
+              shippingAddress.line1 &&
+              shippingAddress.postalCode &&
               shippingRates.length === 0 && (
                 <p className="text-sm text-warning/80 mb-2">
                   No shipping rates available. Check your address or contact us.
@@ -992,8 +992,8 @@ export default function CheckoutPage() {
                 loading ||
                 items.length === 0 ||
                 isRestrictedState ||
-                !!billingValidationError ||
-                (!shippingSameAsBilling && !!shippingValidationError) ||
+                !!shippingValidationError ||
+                (!billingSameAsShipping && !!billingValidationError) ||
                 (!user && !isValidEmail(email)) ||
                 (!user && emailExists)
               }>

@@ -185,6 +185,95 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
   );
 }
 
+type OrderForTrackingEmail = {
+  _id: unknown;
+  orderNumber?: string;
+  email?: string;
+  trackingNumber?: string;
+  user?: { email?: string } | null;
+};
+
+export type SendOrderTrackingNotificationResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code:
+        | "no_transport"
+        | "order_not_found"
+        | "no_tracking"
+        | "no_recipient"
+        | "send_failed";
+    };
+
+/**
+ * Sends the customer an email with the order's stored tracking number.
+ * Uses CF_CORALS_EMAIL_* env vars. Returns a structured result for API responses.
+ */
+export async function sendOrderTrackingNotification(
+  orderId: string,
+): Promise<SendOrderTrackingNotificationResult> {
+  const transporter = getTransport();
+  if (!transporter) {
+    return { ok: false, code: "no_transport" };
+  }
+
+  const order = (await Order.findById(orderId)
+    .select("email trackingNumber orderNumber")
+    .populate("user", "email")
+    .lean()) as OrderForTrackingEmail | null;
+
+  if (!order) {
+    return { ok: false, code: "order_not_found" };
+  }
+
+  const tracking = order.trackingNumber?.trim() ?? "";
+  if (!tracking) {
+    return { ok: false, code: "no_tracking" };
+  }
+
+  const recipient =
+    order.email?.trim() ||
+    (order.user && typeof order.user === "object" && order.user.email
+      ? order.user.email.trim()
+      : "");
+  if (!recipient) {
+    return { ok: false, code: "no_recipient" };
+  }
+
+  const orderNumber = order.orderNumber ?? String(order._id);
+  const subject = `Your shipment tracking – Order #${orderNumber}`;
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Tracking information</title></head>
+<body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <h1 style="font-size: 1.25rem;">Your order is on the way</h1>
+  <p>Here is the tracking number for your order:</p>
+  <p><strong>Order number:</strong> #${escapeHtml(String(orderNumber))}</p>
+  <p style="margin: 0; font-size: 1.125rem; font-weight: bold; font-family: monospace;">${escapeHtml(tracking)}</p>
+  <p style="margin-top: 1.5rem; color: #666;">Use this number on your carrier's website to follow your shipment.</p>
+  <p style="margin-top: 1.5rem;">If you have any questions, please reply to this email.</p>
+</body>
+</html>`;
+
+  try {
+    await transporter.sendMail({
+      from: user,
+      to: recipient,
+      subject,
+      html,
+    });
+  } catch (err) {
+    console.error("Tracking notification email failed", err);
+    return { ok: false, code: "send_failed" };
+  }
+
+  console.log(
+    `Tracking notification email sent to ${recipient} for order #${orderNumber}`,
+  );
+  return { ok: true };
+}
+
 /**
  * Sends an admin alert email to CONFIRM_ORDER_EMAIL_TO when a new order is paid.
  * Uses CF_CORALS_EMAIL_* env vars. No-op if CONFIRM_ORDER_EMAIL_TO or transport is not configured.

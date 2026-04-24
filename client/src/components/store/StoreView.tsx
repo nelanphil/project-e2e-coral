@@ -103,10 +103,19 @@ export function StoreView({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [categoryFilterOpen, setCategoryFilterOpen] = useState(true);
   const [searchInput, setSearchInput] = useState(initialSearchQuery ?? "");
+  /** Trimmed `q` we last sent via router.replace; used to avoid clobbering the input when RSC catches up. */
+  const pendingCommittedQueryRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setSearchInput(initialSearchQuery ?? ""), 0);
-    return () => clearTimeout(t);
+    const urlTrim = (initialSearchQuery ?? "").trim();
+    const pending = pendingCommittedQueryRef.current;
+    if (pending !== null && urlTrim === pending) {
+      pendingCommittedQueryRef.current = null;
+      return;
+    }
+    // Intentional: sync URL-driven prop back to local input when they diverge.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSearchInput(initialSearchQuery ?? "");
   }, [initialSearchQuery]);
 
   // Debounced URL update so search runs server-side across all products (all pagination)
@@ -136,6 +145,7 @@ export function StoreView({
       if (displayLimitRef.current !== 50)
         params.set("limit", String(displayLimitRef.current));
       const qs = params.toString();
+      pendingCommittedQueryRef.current = nextTrimmed;
       router.replace(qs ? `/store?${qs}` : "/store");
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(t);

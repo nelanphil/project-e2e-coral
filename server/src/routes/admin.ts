@@ -23,7 +23,10 @@ import { verifyStripePayment } from "./orders.js";
 
 import { Discount } from "../models/Discount.js";
 import { TickerItem, type ITickerItem } from "../models/TickerItem.js";
-import { sendTemporaryPasswordEmail } from "../services/email.js";
+import {
+  sendOrderTrackingNotification,
+  sendTemporaryPasswordEmail,
+} from "../services/email.js";
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
@@ -487,6 +490,47 @@ adminRouter.patch("/orders/:id/tracking", async (req, res) => {
     res.json({ order });
   } catch {
     res.status(500).json({ error: "Failed to update tracking" });
+  }
+});
+
+adminRouter.post("/orders/:id/notify-tracking", async (req, res) => {
+  try {
+    const exists = await Order.findById(req.params.id).select("_id").lean();
+    if (!exists) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    const result = await sendOrderTrackingNotification(req.params.id);
+    if (result.ok) {
+      res.json({ ok: true });
+      return;
+    }
+
+    switch (result.code) {
+      case "no_tracking":
+        res.status(400).json({ error: "No tracking number on this order" });
+        return;
+      case "no_recipient":
+        res
+          .status(400)
+          .json({ error: "No customer email address for this order" });
+        return;
+      case "no_transport":
+        res.status(503).json({
+          error:
+            "Email is not configured (set CF_CORALS_EMAIL_USER, CF_CORALS_EMAIL_PASSWORD, and CF_CORALS_EMAIL_HOST)",
+        });
+        return;
+      case "order_not_found":
+        res.status(404).json({ error: "Order not found" });
+        return;
+      case "send_failed":
+      default:
+        res.status(500).json({ error: "Failed to send tracking email" });
+    }
+  } catch {
+    res.status(500).json({ error: "Failed to send tracking email" });
   }
 });
 
