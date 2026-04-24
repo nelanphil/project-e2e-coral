@@ -230,7 +230,8 @@ export function StoreView({
           fixed left-0 top-[var(--header-height)] z-50 h-[calc(100vh-var(--header-height))] w-64 shrink-0 transform transition-transform duration-200 ease-out lg:top-0 lg:h-full lg:static lg:z-auto lg:block lg:translate-x-0
           ${mobileFiltersOpen ? "translate-x-0" : "-translate-x-full"}
         `}
-        aria-label="Filters">
+        aria-label="Filters"
+      >
         <div className="card h-full w-full bg-base-100 shadow border border-base-300">
           <div className="card-body p-0 flex flex-col h-full min-h-0">
             <div className="flex items-center justify-between border-b border-base-300 p-4 shrink-0">
@@ -239,7 +240,8 @@ export function StoreView({
                 type="button"
                 className="btn btn-ghost btn-sm btn-square lg:hidden"
                 onClick={() => setMobileFiltersOpen(false)}
-                aria-label="Close filters">
+                aria-label="Close filters"
+              >
                 <X className="size-5" />
               </button>
             </div>
@@ -248,7 +250,8 @@ export function StoreView({
                 <div>
                   <label
                     htmlFor="store-search"
-                    className="flex items-center gap-2 text-sm font-medium text-base-content/70 mb-2">
+                    className="flex items-center gap-2 text-sm font-medium text-base-content/70 mb-2"
+                  >
                     <Search className="size-4 shrink-0" aria-hidden />
                     Search by name
                   </label>
@@ -268,7 +271,8 @@ export function StoreView({
                     className="flex w-full items-center gap-2 text-left text-sm font-medium text-base-content/70 hover:text-base-content"
                     onClick={() => setCategoryFilterOpen((o) => !o)}
                     aria-expanded={categoryFilterOpen}
-                    aria-controls="store-category-list">
+                    aria-controls="store-category-list"
+                  >
                     {categoryFilterOpen ? (
                       <Minus className="size-4 shrink-0" aria-hidden />
                     ) : (
@@ -281,12 +285,14 @@ export function StoreView({
                     className={`menu menu-vertical rounded-box gap-1 bg-transparent p-0 transition-all ${
                       categoryFilterOpen ? "visible" : "hidden"
                     }`}
-                    role="list">
+                    role="list"
+                  >
                     <li>
                       <Link
                         href={buildStoreUrl({ page: 1, categorySlug: null })}
                         className={selectedCategoryId === null ? "active" : ""}
-                        onClick={() => setMobileFiltersOpen(false)}>
+                        onClick={() => setMobileFiltersOpen(false)}
+                      >
                         All
                       </Link>
                     </li>
@@ -300,7 +306,8 @@ export function StoreView({
                           className={
                             selectedCategoryId === cat._id ? "active" : ""
                           }
-                          onClick={() => setMobileFiltersOpen(false)}>
+                          onClick={() => setMobileFiltersOpen(false)}
+                        >
                           {cat.name}
                         </Link>
                       </li>
@@ -323,7 +330,8 @@ export function StoreView({
                 type="button"
                 className="btn btn-ghost btn-sm gap-2 lg:hidden"
                 onClick={() => setMobileFiltersOpen(true)}
-                aria-label="Open filters">
+                aria-label="Open filters"
+              >
                 <Filter className="size-5" />
                 Filters
               </button>
@@ -343,7 +351,8 @@ export function StoreView({
                         })}
                         className={`join-item btn btn-sm ${displayLimit === n ? "btn-active" : ""}`}
                         aria-label={`${n} products per page`}
-                        aria-current={displayLimit === n ? "true" : undefined}>
+                        aria-current={displayLimit === n ? "true" : undefined}
+                      >
                         {n}
                       </Link>
                     ))}
@@ -359,7 +368,8 @@ export function StoreView({
                         className={`join-item btn btn-sm ${columns === n ? "btn-active" : ""}`}
                         onClick={() => setColumns(n)}
                         aria-label={`${n} products per row`}
-                        aria-pressed={columns === n}>
+                        aria-pressed={columns === n}
+                      >
                         {n}
                       </button>
                     ))}
@@ -381,7 +391,8 @@ export function StoreView({
                     </span>
                     <Link
                       href={buildStoreUrl({ page: 1, categorySlug: null })}
-                      className="link link-hover text-sm text-primary">
+                      className="link link-hover text-sm text-primary"
+                    >
                       Clear filter
                     </Link>
                   </>
@@ -397,7 +408,8 @@ export function StoreView({
                     <button
                       type="button"
                       onClick={() => setSearchInput("")}
-                      className="link link-hover text-sm text-primary">
+                      className="link link-hover text-sm text-primary"
+                    >
                       Clear search
                     </button>
                   </>
@@ -425,7 +437,8 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage <= 1 ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Previous page">
+                      aria-label="Previous page"
+                    >
                       <ChevronLeft className="size-4" />
                     </Link>
                     <div className="join">
@@ -445,7 +458,8 @@ export function StoreView({
                           p === -1 ? (
                             <span
                               key={`ellipsis-top-${idx}`}
-                              className="join-item btn btn-sm btn-ghost btn-disabled no-animation">
+                              className="join-item btn btn-sm btn-ghost btn-disabled no-animation"
+                            >
                               …
                             </span>
                           ) : (
@@ -459,7 +473,8 @@ export function StoreView({
                               aria-label={`Page ${p}`}
                               aria-current={
                                 displayPage === p ? "page" : undefined
-                              }>
+                              }
+                            >
                               {p}
                             </Link>
                           ),
@@ -475,7 +490,8 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage >= totalPages ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Next page">
+                      aria-label="Next page"
+                    >
                       <ChevronRight className="size-4" />
                     </Link>
                   </div>
@@ -485,13 +501,15 @@ export function StoreView({
 
             {/* Product grid: 2 cols mobile, 4 or 6 desktop */}
             <ul
-              className={`grid gap-6 grid-cols-1 sm:grid-cols-2 mt-6 ${columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-6"}`}>
+              className={`grid gap-6 grid-cols-1 sm:grid-cols-2 mt-6 ${columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-6"}`}
+            >
               {filteredProducts.map((p) => (
                 <li key={p._id}>
                   <div className="card card-compact bg-base-100 shadow hover:shadow-md transition h-full flex flex-col">
                     <Link
                       href={`/coral/${p.slug}?from=store`}
-                      className="flex flex-col flex-1">
+                      className="flex flex-col flex-1"
+                    >
                       <figure className="aspect-[4/3] relative shrink-0 overflow-hidden rounded-lg mt-3 mx-3">
                         {p.images?.[0] ? (
                           <Image
@@ -556,7 +574,8 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage <= 1 ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Previous page">
+                      aria-label="Previous page"
+                    >
                       <ChevronLeft className="size-4" />
                     </Link>
                     <div className="join">
@@ -576,7 +595,8 @@ export function StoreView({
                           p === -1 ? (
                             <span
                               key={`ellipsis-b-${idx}`}
-                              className="join-item btn btn-sm btn-ghost btn-disabled no-animation">
+                              className="join-item btn btn-sm btn-ghost btn-disabled no-animation"
+                            >
                               …
                             </span>
                           ) : (
@@ -590,7 +610,8 @@ export function StoreView({
                               aria-label={`Page ${p}`}
                               aria-current={
                                 displayPage === p ? "page" : undefined
-                              }>
+                              }
+                            >
                               {p}
                             </Link>
                           ),
@@ -606,7 +627,8 @@ export function StoreView({
                             })
                       }
                       className={`btn btn-sm btn-ghost join-item ${displayPage >= totalPages ? "btn-disabled pointer-events-none" : ""}`}
-                      aria-label="Next page">
+                      aria-label="Next page"
+                    >
                       <ChevronRight className="size-4" />
                     </Link>
                   </div>
