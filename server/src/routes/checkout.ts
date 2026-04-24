@@ -719,7 +719,11 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
         });
         discountsParam = [{ coupon: coupon.id }];
       }
-      const session = await stripe.checkout.sessions.create({
+      // Omitting payment_method_types uses Dashboard payment methods (card, Link, etc.).
+      // PayPal must be activated in Dashboard first; then set STRIPE_CHECKOUT_PAYPAL=true
+      // to request card + PayPal explicitly (otherwise Stripe returns 400 if paypal is not active).
+      // Apple Pay: wallet option on the card path; register storefront domain in Dashboard.
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
         mode: "payment",
         line_items: finalStripeLineItems,
         ...(discountsParam ? { discounts: discountsParam } : {}),
@@ -729,7 +733,14 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
           `${process.env.CLIENT_ORIGIN ?? "http://localhost:3003"}/cart`,
         customer_email: email && typeof email === "string" ? email : undefined,
         metadata: { orderId: order._id.toString() },
-      });
+      };
+      const paypalCheckout =
+        process.env.STRIPE_CHECKOUT_PAYPAL === "true" ||
+        process.env.STRIPE_CHECKOUT_PAYPAL === "1";
+      if (paypalCheckout) {
+        sessionParams.payment_method_types = ["card", "paypal"];
+      }
+      const session = await stripe.checkout.sessions.create(sessionParams);
       await Order.updateOne(
         { _id: order._id },
         { stripeCheckoutSessionId: session.id },

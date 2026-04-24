@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { BulletList } from "@tiptap/extension-list";
 import TextAlign from "@tiptap/extension-text-align";
-import { TextStyle } from "@tiptap/extension-text-style";
+import { TextStyle, FontSize } from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import { useEffect, useLayoutEffect, useRef, useCallback } from "react";
 
@@ -33,6 +33,23 @@ const BulletListWithStyle = BulletList.extend({
     };
   },
 });
+
+const FONT_SIZE_MIN_PX = 10;
+const FONT_SIZE_MAX_PX = 36;
+const FONT_SIZE_STEP_PX = 2;
+const FONT_SIZE_BASE_PX = 16;
+
+function parseFontSizeToPx(
+  fontSize: string | null | undefined,
+): number | null {
+  if (fontSize == null || typeof fontSize !== "string") return null;
+  const s = fontSize.trim();
+  const px = s.match(/^(\d+(?:\.\d+)?)px$/i);
+  if (px) return Math.round(parseFloat(px[1]!));
+  const rem = s.match(/^(\d+(?:\.\d+)?)rem$/i);
+  if (rem) return Math.round(parseFloat(rem[1]!) * 16);
+  return null;
+}
 
 const TEXT_COLORS = [
   { name: "Default", value: "" },
@@ -83,6 +100,7 @@ export function RichTextEditor({
       }),
       BulletListWithStyle,
       TextStyle,
+      FontSize,
       Color,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
@@ -127,6 +145,33 @@ export function RichTextEditor({
       return;
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }, [editor]);
+
+  const adjustFontSizeBy = useCallback(
+    (delta: number) => {
+      if (!editor) return;
+      const attrs = editor.getAttributes("textStyle") as {
+        fontSize?: string | null;
+      };
+      const parsed = parseFontSizeToPx(attrs.fontSize ?? undefined);
+      const current = parsed ?? FONT_SIZE_BASE_PX;
+      const next = Math.min(
+        FONT_SIZE_MAX_PX,
+        Math.max(FONT_SIZE_MIN_PX, current + delta),
+      );
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange("textStyle")
+        .setFontSize(`${next}px`)
+        .run();
+    },
+    [editor],
+  );
+
+  const resetFontSize = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().extendMarkRange("textStyle").unsetFontSize().run();
   }, [editor]);
 
   if (!editor) return null;
@@ -219,6 +264,30 @@ export function RichTextEditor({
             ))}
           </ul>
         </div>
+        <button
+          type="button"
+          onClick={() => adjustFontSizeBy(-FONT_SIZE_STEP_PX)}
+          className="btn btn-sm btn-ghost"
+          aria-label="Decrease font size"
+          title="Decrease font size">
+          A−
+        </button>
+        <button
+          type="button"
+          onClick={() => adjustFontSizeBy(FONT_SIZE_STEP_PX)}
+          className="btn btn-sm btn-ghost"
+          aria-label="Increase font size"
+          title="Increase font size">
+          A+
+        </button>
+        <button
+          type="button"
+          onClick={resetFontSize}
+          className="btn btn-sm btn-ghost"
+          aria-label="Default font size"
+          title="Default font size">
+          Aa
+        </button>
         <div className="divider divider-horizontal mx-0 w-2" />
         <button
           type="button"
