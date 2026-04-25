@@ -34,7 +34,11 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin ?? true);
       } else {
-        callback(new Error(`CORS: origin ${origin} not allowed`));
+        // Reject without throwing: cors will respond without
+        // Access-Control-Allow-Origin headers and the browser will block,
+        // but the server returns a clean response instead of a 500.
+        console.warn(`CORS: origin ${origin} not in allow-list`);
+        callback(null, false);
       }
     },
     credentials: true,
