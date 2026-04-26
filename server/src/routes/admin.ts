@@ -2,7 +2,6 @@ import { Router } from "express";
 import crypto from "node:crypto";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import Stripe from "stripe";
 import { requireAdmin, type AuthRequest } from "../middleware/auth.js";
 import { Order } from "../models/Order.js";
 import type { IOrder } from "../models/Order.js";
@@ -27,9 +26,7 @@ import {
   sendOrderTrackingNotification,
   sendTemporaryPasswordEmail,
 } from "../services/email.js";
-
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
+import { stripe } from "../lib/stripe.js";
 
 export const adminRouter = Router();
 

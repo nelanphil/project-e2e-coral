@@ -9,10 +9,7 @@ import { Discount } from "../models/Discount.js";
 import { processRefundReversals } from "../lib/order-refund.js";
 import { logOrderStatusChange } from "../lib/order-status-log.js";
 import { sendOrderEmailsOnce } from "../services/email.js";
-
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
+import { stripe, stripeWebhookSecret } from "../lib/stripe.js";
 
 export async function handleStripeWebhook(req: Request, res: Response) {
   if (!stripe || !stripeWebhookSecret) {
@@ -146,6 +143,23 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
         sendOrderEmailsOnce(order._id.toString()).catch((err) =>
           console.error("Order emails failed", err),
+        );
+      }
+    }
+  } else if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const orderId = session.metadata?.orderId;
+    if (orderId) {
+      // Stripe Checkout sessions expire after 24h with no payment. Remove
+      // the abandoned pending order so it never appears in admin/order lists.
+      const result = await Order.deleteOne({
+        _id: orderId,
+        status: "pending",
+        paymentStatus: "unpaid",
+      });
+      if (result.deletedCount > 0) {
+        console.log(
+          `Stripe webhook: deleted abandoned pending order ${orderId} (session expired)`,
         );
       }
     }

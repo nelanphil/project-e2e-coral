@@ -1,5 +1,4 @@
 import { Router } from "express";
-import Stripe from "stripe";
 import {
   requireAuth,
   requireAdmin,
@@ -10,9 +9,7 @@ import { Order } from "../models/Order.js";
 import { logOrderStatusChange } from "../lib/order-status-log.js";
 import { sendOrderEmailsOnce } from "../services/email.js";
 import * as shipping from "../services/shipping.js";
-
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
+import { stripe } from "../lib/stripe.js";
 
 /**
  * Verify payment status with Stripe for orders that still appear unpaid.

@@ -15,9 +15,7 @@ import { Discount, type IDiscount } from "../models/Discount.js";
 import { validatePostalCodeMatchesState } from "../lib/address-validation.js";
 import { getVisitorMeta, enrichWithGeo } from "../lib/visitor-meta.js";
 import { generateOrderNumber } from "../lib/order-number.js";
-
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
+import { stripe } from "../lib/stripe.js";
 
 const getSessionId = (req: {
   headers: Record<string, string | string[] | undefined>;
@@ -126,9 +124,15 @@ checkoutRouter.post("/shipping-rates", async (req, res) => {
 
   const state = shippingAddress.state?.toUpperCase().trim();
 
-  if (state === "AK" || state === "ALASKA" || state === "HI" || state === "HAWAII") {
+  if (
+    state === "AK" ||
+    state === "ALASKA" ||
+    state === "HI" ||
+    state === "HAWAII"
+  ) {
     res.status(400).json({
-      error: "We do not ship to Hawaii or Alaska. Please use a continental US shipping address.",
+      error:
+        "We do not ship to Hawaii or Alaska. Please use a continental US shipping address.",
     });
     return;
   }
@@ -227,7 +231,8 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
     shippingStateNorm === "HAWAII"
   ) {
     res.status(400).json({
-      error: "We do not ship to Hawaii or Alaska. Please use a continental US shipping address.",
+      error:
+        "We do not ship to Hawaii or Alaska. Please use a continental US shipping address.",
     });
     return;
   }
@@ -539,7 +544,9 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
       const ipAddress = getIpAddress(req);
       const userAgent = getUserAgent(req);
       const normalizedEmail =
-        email && typeof email === "string" ? email.trim().toLowerCase() : undefined;
+        email && typeof email === "string"
+          ? email.trim().toLowerCase()
+          : undefined;
       let guestUser = await User.findOne({ cookieId, role: "guest" });
 
       if (guestUser) {
@@ -577,7 +584,9 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
               normalizedEmail
             ) {
               // Unique email conflict on update — fall back to the existing user with this email
-              const existingUser = await User.findOne({ email: normalizedEmail });
+              const existingUser = await User.findOne({
+                email: normalizedEmail,
+              });
               if (existingUser) {
                 userId = existingUser._id.toString();
               }
@@ -723,14 +732,22 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
       // PayPal must be activated in Dashboard first; then set STRIPE_CHECKOUT_PAYPAL=true
       // to request card + PayPal explicitly (otherwise Stripe returns 400 if paypal is not active).
       // Apple Pay: wallet option on the card path; register storefront domain in Dashboard.
+      const baseCancelUrl =
+        cancelUrl ??
+        `${process.env.CLIENT_ORIGIN ?? "http://localhost:3003"}/cart`;
+      // Append cancel-tracking params so the client can ask the server to
+      // remove the abandoned pending order. Stripe substitutes
+      // {CHECKOUT_SESSION_ID} when redirecting to cancel_url.
+      const cancelSeparator = baseCancelUrl.includes("?") ? "&" : "?";
+      const finalCancelUrl =
+        `${baseCancelUrl}${cancelSeparator}` +
+        `canceled=1&session_id={CHECKOUT_SESSION_ID}&order_id=${order._id}`;
       const sessionParams: Stripe.Checkout.SessionCreateParams = {
         mode: "payment",
         line_items: finalStripeLineItems,
         ...(discountsParam ? { discounts: discountsParam } : {}),
         success_url: finalSuccessUrl,
-        cancel_url:
-          cancelUrl ??
-          `${process.env.CLIENT_ORIGIN ?? "http://localhost:3003"}/cart`,
+        cancel_url: finalCancelUrl,
         customer_email: email && typeof email === "string" ? email : undefined,
         metadata: { orderId: order._id.toString() },
       };
@@ -766,4 +783,48 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
     error: "Choose paymentMethod: stripe or paypal",
     orderId: order._id,
   });
+});
+
+/**
+ * POST /api/checkout/cancel
+ * Called when a customer abandons the Stripe Checkout session and is
+ * redirected back to the cancel_url. Removes the pending, unpaid order so
+ * abandoned checkouts don't leave order records behind. Idempotent.
+ */
+checkoutRouter.post("/cancel", async (req, res) => {
+  const { sessionId, orderId } = req.body as {
+    sessionId?: string;
+    orderId?: string;
+  };
+  if (!sessionId && !orderId) {
+    res.status(400).json({ error: "sessionId or orderId required" });
+    return;
+  }
+
+  // Only delete orders that are still pending and unpaid. This guards against
+  // a webhook race where payment was actually captured between the redirect
+  // and this request arriving.
+  const filter: Record<string, unknown> = {
+    status: "pending",
+    paymentStatus: "unpaid",
+  };
+  if (sessionId) filter.stripeCheckoutSessionId = sessionId;
+  else if (orderId) filter._id = orderId;
+
+  // If we have a Stripe session id and Stripe is configured, double-check the
+  // session status before deleting — never remove a paid order.
+  if (sessionId && stripe) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      if (session.payment_status === "paid") {
+        res.json({ deleted: false, reason: "paid" });
+        return;
+      }
+    } catch {
+      // If Stripe lookup fails, fall through to the conservative DB filter.
+    }
+  }
+
+  const result = await Order.deleteOne(filter);
+  res.json({ deleted: result.deletedCount > 0 });
 });
