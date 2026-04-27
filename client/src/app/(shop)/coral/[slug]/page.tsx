@@ -97,6 +97,29 @@ export default async function CoralProductPage({ params, searchParams }: Props) 
     jsonLd.sku = product.sku;
   }
 
+  const breadcrumbItems: { name: string; item?: string }[] = [
+    { name: "Home", item: `${process.env.NEXT_PUBLIC_SITE_URL || ""}` },
+    { name: "Store", item: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/store` },
+  ];
+  if (category) {
+    breadcrumbItems.push({
+      name: category.name,
+      item: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/category/${category.slug}`,
+    });
+  }
+  breadcrumbItems.push({ name: product.name });
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      ...(item.item ? { item: item.item } : {}),
+    })),
+  };
+
   const attributes = product.attributes ?? {};
   const hasAttributes =
     typeof attributes === "object" && Object.keys(attributes).length > 0;
@@ -106,6 +129,10 @@ export default async function CoralProductPage({ params, searchParams }: Props) 
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <nav className="text-sm text-base-content/70 mb-4" aria-label="Breadcrumb">
         <Link href={rootHref}>{rootLabel}</Link>

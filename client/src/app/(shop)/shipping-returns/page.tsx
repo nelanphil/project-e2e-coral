@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/api";
 import { PAGE_DEFINITIONS } from "@/lib/page-sections";
+
+export const metadata: Metadata = {
+  title: "Shipping & Returns",
+  description:
+    "Learn about CF Coral shipping policies, live-arrival guarantees, and how to initiate a return or refund.",
+  alternates: { canonical: "/shipping-returns" },
+};
 
 type SectionFromApi = { key: string; label?: string; content: string };
 

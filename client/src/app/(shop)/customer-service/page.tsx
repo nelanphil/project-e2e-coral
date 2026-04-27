@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/api";
 import { PAGE_DEFINITIONS } from "@/lib/page-sections";
 import { ContactForm } from "@/components/ContactForm";
+
+export const metadata: Metadata = {
+  title: "Customer Service",
+  description:
+    "Get help with your CF Coral order. Browse our FAQ or send us a message — we respond quickly to all inquiries.",
+  alternates: { canonical: "/customer-service" },
+};
 
 type SectionFromApi = { key: string; label?: string; content: string };
 

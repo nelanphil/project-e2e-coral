@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { fetchApi } from "@/lib/api-server";
+import { blogPosts } from "@/lib/blog-data";
 import type { ProductsResponse, CategoriesResponse, CollectionsResponse } from "@/lib/types";
 import { filterDisplayCategories } from "@/lib/types";
 
@@ -10,7 +11,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
     { url: `${baseUrl}/store`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${baseUrl}/collections`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
+    { url: `${baseUrl}/customer-service`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/privacy-policy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/shipping-returns`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/terms-of-service`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
   ];
+
+  // Blog posts — sourced from static data; swap to API call when blog moves to database
+  for (const post of blogPosts) {
+    entries.push({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.date),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    });
+  }
 
   try {
     const [productsData, categoriesData, collectionsData] = await Promise.all([
@@ -37,7 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const col of collectionsData.collections ?? []) {
       entries.push({
         url: `${baseUrl}/collections/${col.slug}`,
-        lastModified: new Date(),
+        lastModified: new Date(col.updatedAt),
         changeFrequency: "weekly",
         priority: 0.8,
       });

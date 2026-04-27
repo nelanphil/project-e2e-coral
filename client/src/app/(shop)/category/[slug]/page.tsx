@@ -60,9 +60,34 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const fromCollections = from === "collections";
   const rootLabel = fromCollections ? "Collections" : "Home";
   const rootHref = fromCollections ? "/collections" : "/";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: fromCollections ? "Collections" : "Home", item: fromCollections ? `${siteUrl}/collections` : siteUrl || undefined },
+      { "@type": "ListItem", position: 2, name: category.name, item: `${siteUrl}/category/${slug}` },
+    ],
+  };
+
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: category.name,
+    url: `${siteUrl}/category/${slug}`,
+    itemListElement: products.map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${siteUrl}/coral/${p.slug}`,
+      name: p.name,
+    })),
+  };
 
   return (
     <main className="container mx-auto px-4 py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
       <nav className="text-sm text-base-content/70 mb-4" aria-label="Breadcrumb">
         <Link href={rootHref}>{rootLabel}</Link> / <span>{category.name}</span>
       </nav>
