@@ -125,13 +125,13 @@ export default function AdminLayout({
                       Collections
                     </Link>
                   </li>
+                  <li>
+                    <Link href="/admin/inventory" onClick={closeSidebar}>
+                      Inventory
+                    </Link>
+                  </li>
                 </ul>
               </details>
-            </li>
-            <li>
-              <Link href="/admin/inventory" onClick={closeSidebar}>
-                Inventory
-              </Link>
             </li>
             <li>
               <Link href="/admin/orders" onClick={closeSidebar}>
@@ -156,11 +156,6 @@ export default function AdminLayout({
             <li>
               <Link href="/admin/discounts" onClick={closeSidebar}>
                 Discounts
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/users" onClick={closeSidebar}>
-                Users
               </Link>
             </li>
             <li>
