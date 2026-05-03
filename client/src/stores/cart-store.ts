@@ -3,11 +3,14 @@ import { getBaseUrl } from "@/lib/api";
 import { create } from "zustand";
 import type { CartItem, CartResponse } from "@/lib/types";
 import { getVisitorId } from "@/lib/visitor";
+import { getAuthToken } from "@/lib/auth";
 
 const CART_SESSION_KEY = "cart_session_id";
 
 function getCartHeaders(): HeadersInit {
   const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   const sessionId =
     typeof window !== "undefined"
       ? localStorage.getItem(CART_SESSION_KEY)

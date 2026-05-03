@@ -4,8 +4,12 @@ import { Cart } from "../models/Cart.js";
 import { Inventory } from "../models/Inventory.js";
 import { InventoryLog } from "../models/InventoryLog.js";
 import { getVisitorMeta, enrichWithGeo } from "../lib/visitor-meta.js";
+import { optionalAuth, type AuthRequest } from "../middleware/auth.js";
+import { recordSiteActivitySnapshot } from "../lib/site-activity-record.js";
 
 export const cartRouter = Router();
+
+cartRouter.use(optionalAuth);
 
 function getSessionId(req: { headers: Record<string, string | string[] | undefined> }): string | null {
   const id = req.headers["x-cart-session"];
@@ -59,6 +63,7 @@ cartRouter.get("/", async (req, res) => {
   try {
     const cart = await Cart.findOne({ sessionId }).populate("items.product").lean() as { _id: unknown; items: { product: { _id: string; name: string; slug: string; price: number; images?: string[] }; quantity: number }[] } | null;
     if (!cart) {
+      recordSiteActivitySnapshot(req as AuthRequest, "cart");
       res.json({ items: cartItemsToResponse([]), sessionId });
       return;
     }
@@ -66,6 +71,7 @@ cartRouter.get("/", async (req, res) => {
     if (cart.items.length > 0) {
       await updateCartVisitorMeta(cart._id, req);
     }
+    recordSiteActivitySnapshot(req as AuthRequest, "cart");
     const items = mapCartToItems(cart).filter(Boolean);
     res.json({ items, sessionId });
   } catch {
@@ -123,6 +129,7 @@ cartRouter.post("/", async (req, res) => {
     if (cart.items.length > 0) {
       await updateCartVisitorMeta(cart._id, req);
     }
+    recordSiteActivitySnapshot(req as AuthRequest, "cart");
     const populated = (await Cart.findById(cart._id).populate("items.product").lean()) as { items: PopulatedItem[] } | null;
     const items = mapCartToItems(populated);
     res.setHeader("X-Cart-Session", sessionId);
@@ -146,6 +153,7 @@ cartRouter.delete("/:productId", async (req, res) => {
   try {
     const cart = await Cart.findOne({ sessionId });
     if (!cart) {
+      recordSiteActivitySnapshot(req as AuthRequest, "cart");
       res.json({ items: [], sessionId });
       return;
     }
@@ -172,6 +180,7 @@ cartRouter.delete("/:productId", async (req, res) => {
     if (cart.items.length > 0) {
       await updateCartVisitorMeta(cart._id, req);
     }
+    recordSiteActivitySnapshot(req as AuthRequest, "cart");
     const populated = (await Cart.findById(cart._id).populate("items.product").lean()) as { items: PopulatedItem[] } | null;
     res.json({ items: mapCartToItems(populated), sessionId });
   } catch {
@@ -195,12 +204,14 @@ cartRouter.patch("/:productId", async (req, res) => {
   try {
     const cart = await Cart.findOne({ sessionId });
     if (!cart) {
+      recordSiteActivitySnapshot(req as AuthRequest, "cart");
       res.json({ items: [], sessionId });
       return;
     }
     const existing = cart.items.find((i: { product: mongoose.Types.ObjectId; quantity: number }) => i.product.toString() === productId);
     const currentQty = existing?.quantity ?? 0;
     if (newQty === currentQty) {
+      recordSiteActivitySnapshot(req as AuthRequest, "cart");
       const populated = (await Cart.findById(cart._id).populate("items.product").lean()) as { items: PopulatedItem[] } | null;
       return res.json({ items: mapCartToItems(populated), sessionId });
     }
@@ -263,6 +274,7 @@ cartRouter.patch("/:productId", async (req, res) => {
     if (cart.items.length > 0) {
       await updateCartVisitorMeta(cart._id, req);
     }
+    recordSiteActivitySnapshot(req as AuthRequest, "cart");
     const populated = (await Cart.findById(cart._id).populate("items.product").lean()) as { items: PopulatedItem[] } | null;
     res.json({ items: mapCartToItems(populated), sessionId });
   } catch {
@@ -279,6 +291,7 @@ cartRouter.post("/clear", async (req, res) => {
   try {
     const cart = await Cart.findOne({ sessionId });
     if (!cart) {
+      recordSiteActivitySnapshot(req as AuthRequest, "cart");
       res.json({ items: [], sessionId });
       return;
     }
@@ -301,6 +314,7 @@ cartRouter.post("/clear", async (req, res) => {
     cart.items = [];
     cart.lastActivityAt = new Date();
     await cart.save();
+    recordSiteActivitySnapshot(req as AuthRequest, "cart");
     res.json({ items: [], sessionId });
   } catch {
     res.status(500).json({ error: "Failed to clear cart" });

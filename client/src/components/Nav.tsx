@@ -17,6 +17,7 @@ import { useCartDrawer } from "@/lib/cart/cart-drawer-context";
 import { useCartStore } from "@/stores/cart-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useEffect, useRef, useState } from "react";
+import { pingSiteActivityOncePerSession } from "@/lib/site-activity-ping";
 
 export function Nav() {
   const { user, loading, logout } = useAuth();
@@ -57,6 +58,10 @@ export function Nav() {
       document.body.style.right = "";
     };
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    pingSiteActivityOncePerSession();
+  }, []);
 
   return (
     <>

@@ -27,6 +27,12 @@ import {
   sendTemporaryPasswordEmail,
 } from "../services/email.js";
 import { stripe } from "../lib/stripe.js";
+import {
+  cartsAnalytics,
+  ordersAnalytics,
+  parseAnalyticsMonthYear,
+  siteActivityAnalytics,
+} from "../lib/admin-analytics.js";
 
 export const adminRouter = Router();
 
@@ -61,7 +67,10 @@ adminRouter.get("/stats", async (req, res) => {
       Math.max(1, parseInt(String(req.query.month), 10) || now.getMonth() + 1),
     );
     const year = parseInt(String(req.query.year), 10) || now.getFullYear();
-    const activityTab = (req.query.activityTab as ActivityTab) || "paid";
+    const summaryOnly = String(req.query.fields) === "summary";
+    const activityTab = summaryOnly
+      ? ("paid" as ActivityTab)
+      : ((req.query.activityTab as ActivityTab) || "paid");
 
     const dateFrom = new Date(year, month - 1, 1);
     const dateTo = new Date(year, month, 1);
@@ -130,97 +139,99 @@ adminRouter.get("/stats", async (req, res) => {
           },
         },
       ]),
-      (async () => {
-        if (activityTab === "paid") {
-          const orders = await Order.find({
-            createdAt: dateFilter,
-            status: { $in: ["processing", "shipped", "delivered"] },
-          })
-            .sort({ createdAt: -1 })
-            .limit(10)
-            .populate("lineItems.product", "name")
-            .lean();
-          return orders.map((o) => ({
-            type: "order" as const,
-            _id: o._id,
-            status: o.status,
-            createdAt: o.createdAt,
-            lineItems: o.lineItems,
-            shippingAddress: o.shippingAddress,
-            ipAddress: o.ipAddress,
-            userAgent: o.userAgent,
-            referer: o.referer,
-            geoCity: o.geoCity,
-            geoRegion: o.geoRegion,
-            geoCountry: o.geoCountry,
-          }));
-        }
-        if (activityTab === "checkedOut") {
-          const orders = await Order.find({
-            createdAt: dateFilter,
-            status: "pending",
-          })
-            .sort({ createdAt: -1 })
-            .limit(10)
-            .populate("lineItems.product", "name")
-            .lean();
-          return orders.map((o) => ({
-            type: "order" as const,
-            _id: o._id,
-            status: o.status,
-            createdAt: o.createdAt,
-            lineItems: o.lineItems,
-            shippingAddress: o.shippingAddress,
-            ipAddress: o.ipAddress,
-            userAgent: o.userAgent,
-            referer: o.referer,
-            geoCity: o.geoCity,
-            geoRegion: o.geoRegion,
-            geoCountry: o.geoCountry,
-          }));
-        }
-        if (activityTab === "cart") {
-          const carts = await Cart.find({
-            items: { $exists: true, $ne: [] },
-            lastActivityAt: dateFilter,
-          })
-            .sort({ lastActivityAt: -1 })
-            .limit(10)
-            .populate("items.product", "name price")
-            .lean();
-          return carts.map((c) => {
-            const lineItems = (c.items ?? []).map(
-              (i: {
-                product: { name?: string; price?: number } | null;
-                quantity: number;
-              }) => ({
-                product: i.product
-                  ? {
-                      name: i.product.name ?? "Product",
-                      price: i.product.price ?? 0,
-                    }
-                  : { name: "Product", price: 0 },
-                quantity: i.quantity,
-                price: (i.product as { price?: number })?.price ?? 0,
-              }),
-            );
-            return {
-              type: "cart" as const,
-              _id: c._id,
-              sessionId: c.sessionId,
-              lastActivityAt: c.lastActivityAt,
-              lineItems,
-              ipAddress: c.ipAddress,
-              userAgent: c.userAgent,
-              referer: c.referer,
-              geoCity: c.geoCity,
-              geoRegion: c.geoRegion,
-              geoCountry: c.geoCountry,
-            };
-          });
-        }
-        return [];
-      })(),
+      summaryOnly
+        ? Promise.resolve([])
+        : (async () => {
+            if (activityTab === "paid") {
+              const orders = await Order.find({
+                createdAt: dateFilter,
+                status: { $in: ["processing", "shipped", "delivered"] },
+              })
+                .sort({ createdAt: -1 })
+                .limit(10)
+                .populate("lineItems.product", "name")
+                .lean();
+              return orders.map((o) => ({
+                type: "order" as const,
+                _id: o._id,
+                status: o.status,
+                createdAt: o.createdAt,
+                lineItems: o.lineItems,
+                shippingAddress: o.shippingAddress,
+                ipAddress: o.ipAddress,
+                userAgent: o.userAgent,
+                referer: o.referer,
+                geoCity: o.geoCity,
+                geoRegion: o.geoRegion,
+                geoCountry: o.geoCountry,
+              }));
+            }
+            if (activityTab === "checkedOut") {
+              const orders = await Order.find({
+                createdAt: dateFilter,
+                status: "pending",
+              })
+                .sort({ createdAt: -1 })
+                .limit(10)
+                .populate("lineItems.product", "name")
+                .lean();
+              return orders.map((o) => ({
+                type: "order" as const,
+                _id: o._id,
+                status: o.status,
+                createdAt: o.createdAt,
+                lineItems: o.lineItems,
+                shippingAddress: o.shippingAddress,
+                ipAddress: o.ipAddress,
+                userAgent: o.userAgent,
+                referer: o.referer,
+                geoCity: o.geoCity,
+                geoRegion: o.geoRegion,
+                geoCountry: o.geoCountry,
+              }));
+            }
+            if (activityTab === "cart") {
+              const carts = await Cart.find({
+                items: { $exists: true, $ne: [] },
+                lastActivityAt: dateFilter,
+              })
+                .sort({ lastActivityAt: -1 })
+                .limit(10)
+                .populate("items.product", "name price")
+                .lean();
+              return carts.map((c) => {
+                const lineItems = (c.items ?? []).map(
+                  (i: {
+                    product: { name?: string; price?: number } | null;
+                    quantity: number;
+                  }) => ({
+                    product: i.product
+                      ? {
+                          name: i.product.name ?? "Product",
+                          price: i.product.price ?? 0,
+                        }
+                      : { name: "Product", price: 0 },
+                    quantity: i.quantity,
+                    price: (i.product as { price?: number })?.price ?? 0,
+                  }),
+                );
+                return {
+                  type: "cart" as const,
+                  _id: c._id,
+                  sessionId: c.sessionId,
+                  lastActivityAt: c.lastActivityAt,
+                  lineItems,
+                  ipAddress: c.ipAddress,
+                  userAgent: c.userAgent,
+                  referer: c.referer,
+                  geoCity: c.geoCity,
+                  geoRegion: c.geoRegion,
+                  geoCountry: c.geoCountry,
+                };
+              });
+            }
+            return [];
+          })(),
     ]);
 
     const revenue = revenueResult[0]?.total ?? 0;
@@ -235,6 +246,36 @@ adminRouter.get("/stats", async (req, res) => {
     });
   } catch {
     res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+adminRouter.get("/analytics/site-activity", async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = parseAnalyticsMonthYear(req);
+    const data = await siteActivityAnalytics(dateFrom, dateTo);
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch site activity" });
+  }
+});
+
+adminRouter.get("/analytics/carts", async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = parseAnalyticsMonthYear(req);
+    const data = await cartsAnalytics(dateFrom, dateTo);
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch cart analytics" });
+  }
+});
+
+adminRouter.get("/analytics/orders", async (req, res) => {
+  try {
+    const { dateFrom, dateTo } = parseAnalyticsMonthYear(req);
+    const data = await ordersAnalytics(dateFrom, dateTo);
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch order analytics" });
   }
 });
 

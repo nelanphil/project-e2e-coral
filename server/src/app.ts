@@ -18,14 +18,40 @@ import { pagesRouter } from "./routes/pages.js";
 import { contactRouter } from "./routes/contact.js";
 import { discountsRouter } from "./routes/discounts.js";
 import { tickerRouter } from "./routes/ticker.js";
+import { siteActivityRouter } from "./routes/site-activity.js";
 
 const app = express();
 
 app.use(compression());
 
-const allowedOrigins = (process.env.CLIENT_ORIGIN ?? "http://localhost:3003")
-  .split(",")
-  .map((o) => o.trim());
+function buildAllowedOrigins(): string[] {
+  const raw =
+    process.env.CLIENT_ORIGIN ?? "http://localhost:3003,http://127.0.0.1:3003";
+  const list = raw
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (process.env.NODE_ENV === "production") {
+    return list;
+  }
+  const extra = new Set<string>();
+  for (const o of list) {
+    try {
+      const u = new URL(o);
+      const port = u.port ? `:${u.port}` : "";
+      if (u.hostname === "localhost") {
+        extra.add(`${u.protocol}//127.0.0.1${port}`);
+      } else if (u.hostname === "127.0.0.1") {
+        extra.add(`${u.protocol}//localhost${port}`);
+      }
+    } catch {
+      /* ignore malformed */
+    }
+  }
+  return [...new Set([...list, ...extra])];
+}
+
+const allowedOrigins = buildAllowedOrigins();
 
 app.use(
   cors({
@@ -42,6 +68,12 @@ app.use(
       }
     },
     credentials: true,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Cookie-Id",
+      "X-Cart-Session",
+    ],
   }),
 );
 
@@ -68,6 +100,7 @@ app.use("/api/discounts", discountsRouter);
 app.use("/api/pages", pagesRouter);
 app.use("/api/contact", contactRouter);
 app.use("/api/ticker-items", tickerRouter);
+app.use("/api/site-activity", siteActivityRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

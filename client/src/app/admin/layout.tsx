@@ -104,7 +104,7 @@ export default function AdminLayout({
           <ul className="menu mt-4 flex-1">
             <li>
               <Link href="/admin" onClick={closeSidebar}>
-                Dashboard
+                Analytics
               </Link>
             </li>
             <li>

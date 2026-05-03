@@ -14,6 +14,7 @@ import { RewardsSettings } from "../models/RewardsSettings.js";
 import { Discount, type IDiscount } from "../models/Discount.js";
 import { validatePostalCodeMatchesState } from "../lib/address-validation.js";
 import { getVisitorMeta, enrichWithGeo } from "../lib/visitor-meta.js";
+import { recordSiteActivitySnapshot } from "../lib/site-activity-record.js";
 import { generateOrderNumber } from "../lib/order-number.js";
 import { stripe } from "../lib/stripe.js";
 
@@ -32,27 +33,6 @@ const getCookieId = (req: {
   const s = Array.isArray(id) ? id[0] : id;
   return typeof s === "string" && s.trim() ? s.trim() : null;
 };
-
-function getIpAddress(req: {
-  headers: Record<string, string | string[] | undefined>;
-  socket: { remoteAddress?: string };
-}) {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  if (Array.isArray(forwarded) && forwarded.length > 0) {
-    return forwarded[0].split(",")[0].trim();
-  }
-  return req.socket.remoteAddress;
-}
-
-function getUserAgent(req: {
-  headers: Record<string, string | string[] | undefined>;
-}) {
-  const ua = req.headers["user-agent"];
-  return typeof ua === "string" ? ua : undefined;
-}
 
 type CheckoutAddress = {
   line1: string;
@@ -539,10 +519,11 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
 
   // If no authenticated user, try to find or create guest user
   if (!userId) {
-    const cookieId = getCookieId(req);
-    if (cookieId) {
-      const ipAddress = getIpAddress(req);
-      const userAgent = getUserAgent(req);
+      const cookieId = getCookieId(req);
+      if (cookieId) {
+        const vm = getVisitorMeta(req);
+        const ipAddress = vm.ipAddress;
+        const userAgent = vm.userAgent;
       const normalizedEmail =
         email && typeof email === "string"
           ? email.trim().toLowerCase()
@@ -702,6 +683,10 @@ checkoutRouter.post("/create", optionalAuth, async (req, res) => {
       })
       .catch(() => {});
   }
+
+  recordSiteActivitySnapshot(req as AuthRequest, "checkout", {
+    userIdOverride: userId,
+  });
 
   if (paymentMethod === "stripe" && stripe) {
     try {
