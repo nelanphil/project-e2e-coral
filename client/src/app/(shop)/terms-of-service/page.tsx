@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/api";
 import { PAGE_DEFINITIONS } from "@/lib/page-sections";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Review the CF Coral terms of service governing the use of our website and purchase of coral products.",
+  alternates: { canonical: "/terms-of-service" },
+};
 
 type SectionFromApi = { key: string; label?: string; content: string };
 

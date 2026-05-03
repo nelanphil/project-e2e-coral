@@ -59,9 +59,35 @@ export default async function CollectionDetailPage({ params }: Props) {
   }
 
   const products = collection.products ?? [];
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl || undefined },
+      { "@type": "ListItem", position: 2, name: "Collections", item: `${siteUrl}/collections` },
+      { "@type": "ListItem", position: 3, name: collection.name, item: `${siteUrl}/collections/${slug}` },
+    ],
+  };
+
+  const itemListJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: collection.name,
+    url: `${siteUrl}/collections/${slug}`,
+    itemListElement: (products as Product[]).map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${siteUrl}/coral/${p.slug}`,
+      name: p.name,
+    })),
+  };
 
   return (
     <main className="container mx-auto px-4 py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
       <nav className="text-sm text-base-content/70 mb-4">
         <Link href="/store">Store</Link> /{" "}
         <Link href="/collections">Collections</Link> /{" "}

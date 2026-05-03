@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { getBaseUrl } from "@/lib/api";
 import { PAGE_DEFINITIONS } from "@/lib/page-sections";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Read the CF Coral privacy policy to understand how we collect, use, and protect your personal information.",
+  alternates: { canonical: "/privacy-policy" },
+};
 
 type SectionFromApi = { key: string; label?: string; content: string };
 

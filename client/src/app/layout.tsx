@@ -34,8 +34,12 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3003";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "CF Coral",
-  description: "eCommerce store for coral",
+  title: {
+    default: "CF Coral",
+    template: "%s | CF Coral",
+  },
+  description:
+    "CF Coral — premium SPS, LPS, and soft corals for reef aquarium hobbyists. Shop frags, colonies, and rare specimens with fast, live-arrival shipping.",
   openGraph: {
     type: "website",
     siteName: "CF Coral",
@@ -43,6 +47,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
+  },
+  verification: {
+    google: "z5-gfvzdOIGgYyOM4E4usUjdhozVf6XDuU9yRdkuxpM",
   },
 };
 
