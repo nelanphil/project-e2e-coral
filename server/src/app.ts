@@ -22,6 +22,10 @@ import { siteActivityRouter } from "./routes/site-activity.js";
 
 const app = express();
 
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
 app.use(compression());
 
 function buildAllowedOrigins(): string[] {

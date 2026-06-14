@@ -51,10 +51,7 @@ export async function runReleaseStaleCartReservations(): Promise<number> {
       });
     }
 
-    await Cart.updateOne(
-      { _id: cart._id },
-      { $set: { items: [], lastActivityAt: new Date() } }
-    );
+    await Cart.updateOne({ _id: cart._id }, { $set: { items: [] } });
     released++;
   }
 

@@ -143,30 +143,63 @@ export function getVisitorMeta(req: Request): VisitorMeta {
 
 const LOCALHOST_IP = /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/i;
 
+function geoFromIpWhoIs(data: Record<string, unknown>): GeoMeta {
+  if (data.success === false) return {};
+  return {
+    ...(typeof data.country === "string" && { geoCountry: data.country }),
+    ...(typeof data.region === "string" && { geoRegion: data.region }),
+    ...(typeof data.city === "string" && { geoCity: data.city }),
+  };
+}
+
+function geoFromIpApiCo(data: Record<string, unknown>): GeoMeta {
+  if (data.error) return {};
+  const country =
+    typeof data.country_name === "string" ? data.country_name : undefined;
+  const region = typeof data.region === "string" ? data.region : undefined;
+  const city = typeof data.city === "string" ? data.city : undefined;
+  return {
+    ...(country && { geoCountry: country }),
+    ...(region && { geoRegion: region }),
+    ...(city && { geoCity: city }),
+  };
+}
+
+async function fetchGeoFromProvider(
+  url: string,
+  parse: (data: Record<string, unknown>) => GeoMeta,
+): Promise<GeoMeta> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+  if (!res.ok) return {};
+  const data = (await res.json()) as Record<string, unknown>;
+  return parse(data);
+}
+
 export async function enrichWithGeo(ip: string | undefined): Promise<GeoMeta> {
-  const n = normalizeClientIp(ip);
+  let n = normalizeClientIp(ip);
   if (!n || LOCALHOST_IP.test(n)) {
-    return {};
+    const devOverride = process.env.DEV_GEO_IP_OVERRIDE?.trim();
+    if (!devOverride) return {};
+    n = devOverride;
   }
-  try {
-    const res = await fetch(
-      `http://ip-api.com/json/${encodeURIComponent(n)}?fields=country,regionName,city`,
-      {
-        signal: AbortSignal.timeout(3000),
-      },
-    );
-    if (!res.ok) return {};
-    const data = (await res.json()) as {
-      country?: string;
-      regionName?: string;
-      city?: string;
-    };
-    return {
-      ...(data.country && { geoCountry: data.country }),
-      ...(data.regionName && { geoRegion: data.regionName }),
-      ...(data.city && { geoCity: data.city }),
-    };
-  } catch {
-    return {};
+  const encoded = encodeURIComponent(n);
+  const providers: { url: string; parse: (d: Record<string, unknown>) => GeoMeta }[] = [
+    {
+      url: `https://ipwho.is/${encoded}`,
+      parse: geoFromIpWhoIs,
+    },
+    {
+      url: `https://ipapi.co/${encoded}/json/`,
+      parse: geoFromIpApiCo,
+    },
+  ];
+  for (const { url, parse } of providers) {
+    try {
+      const geo = await fetchGeoFromProvider(url, parse);
+      if (Object.keys(geo).length > 0) return geo;
+    } catch {
+      /* try next provider */
+    }
   }
+  return {};
 }

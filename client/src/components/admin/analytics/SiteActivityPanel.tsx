@@ -26,6 +26,12 @@ export interface SiteActivityData {
   ordersCreated: number;
   ordersPaid: number;
   usaContinental: UsaContinentalData;
+  meta?: {
+    siteActivityLogRowsThisMonth: number;
+    siteActivityLogRowsTotal: number;
+    latestLogAt: string | null;
+    trackingEnabled: boolean;
+  };
 }
 
 type SortKey = "state" | "visits";
@@ -159,6 +165,34 @@ export function SiteActivityPanel({
           </span>
         ) : null}
       </p>
+
+      {!loading &&
+        data &&
+        data.meta &&
+        data.meta.siteActivityLogRowsThisMonth === 0 &&
+        data.cartsTouched > 0 && (
+          <div
+            role="status"
+            className="alert alert-warning text-sm shadow-sm">
+            <div>
+              <p className="font-medium">Visitor tracking may not be running</p>
+              <p className="mt-1 text-base-content/80">
+                This month has {data.cartsTouched.toLocaleString()} cart
+                {data.cartsTouched === 1 ? "" : "s"} touched but{" "}
+                {data.meta.siteActivityLogRowsThisMonth} site activity log
+                rows. Check that the API service has{" "}
+                <code className="text-xs">TRUST_PROXY=true</code>, both client
+                and API were redeployed after analytics shipped, and run the
+                backfill script if needed. Total logs in database:{" "}
+                {data.meta.siteActivityLogRowsTotal.toLocaleString()}
+                {data.meta.latestLogAt
+                  ? ` (latest: ${new Date(data.meta.latestLogAt).toLocaleString()})`
+                  : ""}
+                .
+              </p>
+            </div>
+          </div>
+        )}
 
       {!loading && data?.uniqueGuests != null ? (
         <p className="text-xs text-base-content/60 -mt-2">

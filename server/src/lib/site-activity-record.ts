@@ -13,7 +13,7 @@ import {
   sanitizeCartSessionHeader,
 } from "../lib/visitor-meta.js";
 
-function localActivityDayAndIso(now = new Date()): {
+export function localActivityDayAndIso(now = new Date()): {
   activityDay: Date;
   dayIso: string;
 } {
@@ -28,7 +28,7 @@ function localActivityDayAndIso(now = new Date()): {
   return { activityDay, dayIso: `${y}-${m}-${d}` };
 }
 
-function guestKeyFromMeta(
+export function guestKeyFromMeta(
   meta: {
     cookieId?: string;
     ipAddress?: string;
@@ -52,9 +52,10 @@ async function visitorSegmentFor(
   userId: mongoose.Types.ObjectId | null,
 ): Promise<SiteActivityVisitorSegment> {
   if (!userId) return "anonymous";
-  const u = (await User.findById(userId).select("role").lean()) as
-    | Pick<IUser, "role">
-    | null;
+  const u = (await User.findById(userId).select("role").lean()) as Pick<
+    IUser,
+    "role"
+  > | null;
   if (!u) return "anonymous";
   if (u.role === "customer") return "customer";
   if (u.role === "guest") return "guest_user";
@@ -116,7 +117,6 @@ export function recordSiteActivitySnapshot(
             identityKey,
             visitorKey,
             firstSeenAt: now,
-            hitCount: 0,
           },
           $set: {
             lastSource: source,
@@ -143,10 +143,12 @@ export function recordSiteActivitySnapshot(
               ).exec();
             }
           })
-          .catch(() => {});
+          .catch((err) => {
+            console.error("[site-activity] geo enrich failed:", err);
+          });
       }
-    } catch {
-      /* non-blocking */
+    } catch (err) {
+      console.error("[site-activity] record failed:", err);
     }
   })();
 }

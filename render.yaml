@@ -12,6 +12,10 @@ services:
         value: production
       - key: CLIENT_ORIGIN
         sync: false # set in Render dashboard, e.g. https://cfcorals.com,https://www.cfcorals.com
+      - key: TRUST_PROXY
+        value: "true" # honor X-Forwarded-For behind Render reverse proxy (site activity + geo)
+      - key: MONGODB_PRODUCTION_URI
+        sync: false # set in Render dashboard
 
   # ── Next.js web service ──
   - type: web

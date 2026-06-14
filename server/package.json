@@ -12,6 +12,8 @@
     "clean-product-names": "tsx src/scripts/clean-product-names.ts",
     "sync-skus": "tsx src/scripts/sync-skus-from-csv.ts",
     "copy-db-to-prod": "tsx src/scripts/copy-db-to-prod.ts",
+    "backfill-site-activity": "tsx src/scripts/backfill-site-activity.ts",
+    "test": "tsx --test src/**/*.test.ts",
     "lint": "eslint src"
   },
   "dependencies": {

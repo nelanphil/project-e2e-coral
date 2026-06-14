@@ -158,6 +158,9 @@ export async function siteActivityAnalytics(dateFrom: Date, dateTo: Date) {
     anonymousCount,
     guestAccountCount,
     adminCount,
+    siteActivityLogRowsThisMonth,
+    siteActivityLogRowsTotal,
+    latestLog,
   ] = await Promise.all([
     Cart.countDocuments({ lastActivityAt: dateFilter }),
     Order.countDocuments({ createdAt: dateFilter }),
@@ -211,6 +214,12 @@ export async function siteActivityAnalytics(dateFrom: Date, dateTo: Date) {
       { $group: { _id: "$user" } },
       { $count: "c" },
     ]),
+    SiteActivityLog.countDocuments({ activityDay: activityDayFilter }),
+    SiteActivityLog.countDocuments({}),
+    SiteActivityLog.findOne({})
+      .sort({ lastSeenAt: -1 })
+      .select({ lastSeenAt: 1 })
+      .lean() as Promise<{ lastSeenAt?: Date } | null>,
   ]);
 
   const uniqueCustomers = customerCount[0]?.c ?? 0;
@@ -243,6 +252,12 @@ export async function siteActivityAnalytics(dateFrom: Date, dateTo: Date) {
       uniqueVisitorsTotal: usaContinental.uniqueVisitorsTotal,
       statesWithActivity: usaContinental.byState.length,
       byState: usaContinental.byState,
+    },
+    meta: {
+      siteActivityLogRowsThisMonth,
+      siteActivityLogRowsTotal,
+      latestLogAt: latestLog?.lastSeenAt?.toISOString() ?? null,
+      trackingEnabled: true,
     },
   };
 }
