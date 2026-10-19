@@ -6,12 +6,9 @@ const nextConfig: NextConfig = {
     root: resolve("."),
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-      },
-    ],
+    // Resize on Cloudinary. The default loader would download originals and run sharp in this process.
+    loader: "custom",
+    loaderFile: "./src/lib/cloudinary-loader.ts",
   },
   async redirects() {
     return [
